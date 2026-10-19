@@ -3,20 +3,20 @@ plugins {
 }
 
 android {
-    namespace 'com.gathin.tvhome'
+    namespace 'com.minimaltv.home'
     compileSdk 34
 
     defaultConfig {
-        applicationId 'com.gathin.tvhome'
+        applicationId 'com.minimaltv.home'
         minSdk 26
         targetSdk 34
-        versionCode 2
-        versionName '2.0'
+        versionCode 1
+        versionName '1.0'
     }
 
     buildTypes {
         release {
-            // R8 strips and optimises the code (AndroidX included): smaller APK, faster start on a slow TV CPU.
+            // R8 strips the code and resources: smaller APK, faster start on a slow TV CPU.
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -25,15 +25,16 @@ android {
         }
     }
 
+    lint {
+        // Play Store rules that do not apply to a sideloaded home screen: it is a HOME app rather than a TV
+        // launcher-row entry, and it needs QUERY_ALL_PACKAGES to list every app on Android 11+.
+        disable 'MissingLeanbackLauncher', 'QueryAllPackagesPermission'
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 }
 
-dependencies {
-    implementation 'androidx.recyclerview:recyclerview:1.3.2'
-    implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
-    // Test only (never in the APK): plain JVM tests for the module card validators, src/test.
-    testImplementation 'junit:junit:4.13.2'
-}
+// No dependencies on purpose: framework widgets only, so the launcher starts fast and stays small.

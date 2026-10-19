@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="44dp"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:gravity="center_vertical"
+    android:background="@drawable/row_bg"
+    android:singleLine="true"
+    android:ellipsize="end"
+    android:textColor="@color/pill_text"
+    android:textSize="15sp"
+    android:fontFamily="sans-serif-medium"
+    android:focusable="true"
+    android:clickable="true" />

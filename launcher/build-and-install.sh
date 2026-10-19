@@ -25,7 +25,7 @@ if [ -z "${STOCK_LAUNCHER:-}" ]; then
   case " $KNOWN_STOCK_LAUNCHERS " in
     *" $HOME_PKG "*) STOCK_LAUNCHER=$HOME_PKG ;;
     *)
-      if [ "$HOME_PKG" = com.gathin.tvhome ]; then
+      if [ "$HOME_PKG" = com.minimaltv.home ]; then
         STOCK_LAUNCHER=none; echo "Home already belongs to this launcher; nothing will be disabled."
       else
         echo "ERROR: Home currently resolves to '${HOME_PKG:-nothing}', which is not a stock launcher this script knows." >&2
@@ -44,11 +44,11 @@ APK=app/build/outputs/apk/release/app-release.apk
 printf '%s\n' \
   "pm install -r /data/local/tmp/tvhome.apk" \
   "rm -f /data/local/tmp/tvhome.apk" \
-  "pm grant com.gathin.tvhome android.permission.ACCESS_FINE_LOCATION 2>/dev/null; echo location-granted" \
-  "cmd package compile -m speed -f com.gathin.tvhome" \
-  "am start -W -n com.gathin.tvhome/.MainActivity | grep -E '^(Status|Error)'" \
+  "pm grant com.minimaltv.home android.permission.ACCESS_FINE_LOCATION 2>/dev/null; pm grant com.minimaltv.home android.permission.ACCESS_COARSE_LOCATION 2>/dev/null; echo location-granted" \
+  "cmd package compile -m speed -f com.minimaltv.home" \
+  "am start -W -n com.minimaltv.home/.MainActivity | grep -E '^(Status|Error)'" \
   "$DISABLE_STOCK" \
-  "cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity" \
+  "cmd package set-home-activity --user 0 com.minimaltv.home/.MainActivity" \
   | "$PY" -I ../tools/tv.py --batch
 # Order matters: the new launcher is started before the stock one is disabled, and the home
 # preference is set after. Android drops the preference whenever the set of HOME apps changes, and
@@ -57,7 +57,7 @@ printf '%s\n' \
 # stock launcher back if it is not ours.
 HOME_NOW=$("$PY" -I ../tools/tv.py 'cmd package resolve-activity --brief -c android.intent.category.HOME -a android.intent.action.MAIN' | tail -n 1 | tr -d '\r')
 case "$HOME_NOW" in
-  com.gathin.tvhome/*) echo "Home now resolves to $HOME_NOW" ;;
+  com.minimaltv.home/*) echo "Home now resolves to $HOME_NOW" ;;
   *)
     [ "$STOCK_LAUNCHER" = none ] || "$PY" -I ../tools/tv.py "pm enable --user 0 $STOCK_LAUNCHER" >/dev/null || true
     echo "ERROR: Home resolves to ${HOME_NOW:-nothing}, not to the new launcher; $STOCK_LAUNCHER was re-enabled." >&2
@@ -66,16 +66,4 @@ case "$HOME_NOW" in
     exit 1 ;;
 esac
 
-# Optional accessibility services. Off unless asked for, and Android switches them off again on
-# every reinstall, so pass the flag each time you run this script.
-#   INPUT_KEY_SERVICE=1   the remote's Input button (KEYCODE_TV) opens the input switcher from any
-#                         app; Google TV needs this once the stock launcher is gone (InputKeyService)
-#   HOME_KEY_SERVICE=1    remotes whose Home button sends KEYCODE_ALL_APPS instead of HOME, e.g. Xiaomi
-#                         sticks: the key is routed to the launcher (HomeKeyService)
-enable_service() {   # appends to enabled_accessibility_services without dropping other services
-  svc=com.gathin.tvhome/.$1
-  "$PY" -I ../tools/tv.py "s=\$(settings get secure enabled_accessibility_services); case \"\$s\" in *$1*) ;; null|'') settings put secure enabled_accessibility_services $svc ;; *) settings put secure enabled_accessibility_services \"\$s:$svc\" ;; esac; settings put secure accessibility_enabled 1; echo $1 enabled"
-}
-if [ "${INPUT_KEY_SERVICE:-0}" = 1 ]; then enable_service InputKeyService; fi
-if [ "${HOME_KEY_SERVICE:-0}" = 1 ]; then enable_service HomeKeyService; fi
 echo "Installed. Press Home on the remote to see it."

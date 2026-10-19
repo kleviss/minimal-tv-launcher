@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One dock tile: the app's banner (or icon and name), and a ring that shows while focused. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="256dp"
+    android:layout_height="144dp"
+    android:layout_margin="14dp"
+    android:clipChildren="false"
+    android:focusable="true"
+    android:clickable="true">
+
+    <ImageView
+        android:id="@+id/image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop" />
+
+    <TextView
+        android:id="@+id/label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:paddingBottom="14dp"
+        android:gravity="center"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:textColor="@color/text"
+        android:textSize="15sp"
+        android:fontFamily="sans-serif-medium"
+        android:visibility="gone" />
+
+    <!-- Sits 5dp outside the tile so it shows on white banners too (Netflix). -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="-5dp"
+        android:background="@drawable/focus_ring"
+        android:duplicateParentState="true" />
+</FrameLayout>

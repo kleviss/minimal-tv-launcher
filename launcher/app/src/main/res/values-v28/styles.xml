@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Font variation settings are available from Android 9 (API 28). -->
-    <style name="TopButton" parent="TopButtonBase">
-        <item name="android:fontVariationSettings">\'wght\' 500</item>
-    </style>
-</resources>
