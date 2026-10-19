@@ -1,0 +1,57 @@
+# Nokia-branded Android TV 11, built by Vestel on a MediaTek/MStar platform (device "yeoksam", build
+# RTOC.251019.001, 1.4 GB RAM, 32-bit ARM, low_ram flag set). 1080p, density 320.
+# Stock launcher: com.google.android.tvlauncher (disabled by launcher/build-and-install.sh).
+#
+# Group A and a trial set (the Vestel reporter, voice assistant, Chromecast and phone remote) were applied and
+# measured on this TV on 2026-10-19. Spotify and the other group C lines were left alone.
+# Apply:   TV_HOST=<tv ip> tools/disable.sh examples/nokia-vestel-android-tv-11/debloat.txt
+# Undo only this list (the launcher stays Home):
+#          TV_HOST=<tv ip> tools/venv/bin/python -I tools/tv.py "for p in $(grep -vE '^[[:space:]]*(#|$)' examples/nokia-vestel-android-tv-11/debloat.txt | awk '{print $1}' | tr '\n' ' '); do pm enable \$p; done"
+#          (To bring back just one thing, e.g. casting: ... tv.py 'pm enable com.google.android.apps.mediashell')
+# Undo everything: tools/restore.sh <this file>. Careful: it ALSO re-enables the stock launcher and makes
+# it Home again.
+# Everything is DISABLED, not uninstalled. Only the uncommented lines (group A) are applied; remove the
+# leading # from a line in group B or C to disable that one as well.
+#
+# Measured on this TV while YouTube was playing: 1.4 GB total, about 480 MB available, load average 73.
+# Group A result, three readings each with YouTube in the foreground: available memory went from about
+# 272 MB to about 309 MB (+36 MB, readings vary by +-17 MB). Only two of group A were running (~104 MB RSS).
+# The "MB" notes are resident memory (RSS) of each process while it was running. RSS counts shared
+# libraries too, so the real saving is smaller. Measure free memory before and after instead of trusting it.
+#
+# Already disabled at the factory (nothing to do): all 14 uk.co.freeview.* apps and TalkBack.
+
+# ---- A. Safe: nothing you see or use changes -------------------------------------------------------
+
+com.google.android.tvrecommendations                # content rows for the stock launcher, which is off (~67 MB)
+com.google.android.leanbacklauncher.partnercustomizer   # stock launcher partner settings (~40 MB)
+com.google.android.feedback                         # Google feedback / bug report agent
+android.autoinstalls.config.vestel.cosmos           # lets Google Play auto-install partner apps in the background
+fusion.android.tv.demo                              # shop demo mode
+com.google.android.play.games                       # Play Games; keeps a service running. Skip if you use it
+
+# ---- B. Probably safe, vendor code: try it, undo if anything odd -----------------------------------
+# I can't confirm what this does, only that it is a reporting service.
+
+com.vestel.vestelreporter                           # Vestel telemetry / reporter (~64 MB). Trial: applied
+
+# ---- C. Your call: real features, disable only what you never use ----------------------------------
+
+com.google.android.katniss                          # voice assistant. The mic button on the remote stops working (~53 MB). Trial: applied
+com.google.android.apps.mediashell                  # Chromecast built-in: casting from your phone stops (~54 MB). Trial: applied
+com.google.android.tv.remote.service                # "Google TV" phone app as a remote stops working (~41 MB). Trial: applied
+#com.google.android.videos                          # Play Movies & TV (Google is retiring it)
+#com.google.android.youtube.tvmusic                 # YouTube Music
+#com.google.android.backdrop                        # ambient-mode screensaver
+#com.spotify.tv.android                             # Spotify, ~79 MB while running in the background
+
+# ---- D. Leave alone: disabling any of these breaks the TV ------------------------------------------
+# Listed so nobody disables them by mistake. These are NOT package lines.
+#   com.vestel.tv.keycontroller      remote control keys
+#   com.vestel.tv.backlight          screen backlight and picture settings
+#   com.vestel.tv.service, com.vestel.tv.servicepatch, com.vestel.tv.rcupdater, com.vestel.overlay.*
+#   com.mediatek.*, com.mstar.*      the TV stack: tuner, HDMI inputs, Live TV, factory calibration
+#   com.android.bluetooth            Bluetooth remotes, keyboards and headphones
+#   com.google.android.gms, com.android.vending, com.google.android.webview   Play services, Play Store, WebView
+#   com.android.systemui, com.android.tv.settings, com.android.providers.*    system UI, settings, providers
+#   com.android.vpndialogs           the permission prompt NordVPN needs

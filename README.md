@@ -42,10 +42,15 @@ Pick or write a list (one package per line, see `examples/`), then:
 
 ```bash
 TV_HOST=<tv ip> tools/disable.sh <list>
-TV_HOST=<tv ip> tools/restore.sh <list>
 ```
 
-To get the stock launcher back: `pm enable --user 0 com.google.android.tvlauncher` over ADB, or the same package from your list. See `docs/TROUBLESHOOTING.md` if Home does not switch.
+To undo only that list and keep this launcher as Home, enable the packages again over ADB:
+
+```bash
+TV_HOST=<tv ip> tools/venv/bin/python -I tools/tv.py 'for p in <package> <package>; do pm enable $p; done'
+```
+
+`tools/restore.sh <list>` is the full way back to stock: it re-enables the list, re-enables the stock launcher and makes it Home again. See `docs/TROUBLESHOOTING.md` if Home does not switch.
 
 ## Licence
 

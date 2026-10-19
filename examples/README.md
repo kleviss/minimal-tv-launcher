@@ -3,6 +3,9 @@
 One folder per TV model, each with a `debloat.txt` listing the packages that are safe to disable
 on that firmware, grouped and commented. These are starting points: comment out anything you use.
 
+Most lists come from [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv). Where a note mentions launcher
+options or key services (such as `HOME_KEY_SERVICE`), it refers to that project's launcher, which this one does not have.
+
 | Folder | TV | OS | Notes |
 |---|---|---|---|
 | `benq-e55-735/` | BenQ E55-735 (Changhong AI PONT, DVB96BQ) | Google TV 14 | Homwee store/help, Anoki ACR, Google TV recommendations; wireless-debugging pairing, setupwraith, deep-standby notes |
@@ -10,6 +13,7 @@ on that firmware, grouped and commented. These are starting points: comment out 
 | `google-chromecast-gtv-4k/` | Chromecast with Google TV 4K (sabrina) | Google TV 14 | Google telemetry and ad services, ambient mode, launcherx + setupwraith; wireless-debugging pairing, YouTube button remap |
 | `hisense-smarttv-4k-ffm/` | Hisense SmartTV 4K FFM (huangshan, MediaTek) | Android TV 10 | ACR (evservice), VIDAA preload, store/hotel mode, OTA; smartsense must stay enabled |
 | `insignia-ns55f301na25/` | Insignia 55" F30 4K Fire TV (NS-55F301NA25, AFTDCT31, duckie) | Fire OS 7 / Android 9 | Amazon ACR telemetry, Fire TV ads/shopping, Alexa, OTA updates; AirPlay and TIF HDMI inputs kept |
+| `nokia-vestel-android-tv-11/` | Nokia-branded TV built by Vestel (yeoksam, MediaTek/MStar, 1.4 GB RAM) | Android TV 11 | Stock launcher recommendations, Google feedback agent, partner auto-installs, demo mode, Vestel reporter; voice, Chromecast and phone remote off by choice. Measured memory gain, and what to leave alone (remote keys, backlight, TV stack, Bluetooth) |
 | `nvidia-shield-tv-pro-2019/` | NVIDIA SHIELD TV Pro 2019 (P2897, mdarcy) | Android TV 11 | NVIDIA telemetry, GameStream leftovers, sponsored rows, partner auto-installs |
 | `oneplus-tv-dubai/` | OnePlus TV (D00, Dubai) | Google TV 14 | HeyTap/OnePlus extras, OnePlus Connect, Smart Home |
 | `philips-smart-4k-google-tv/` | Philips Smart 4K TV (Skyworth, eleonas, MediaTek), India | Google TV 14 | Skyworth recommendations, after-sale/activation trackers, iCast; Chromecast, Assistant off by choice; wireless-debugging pairing, setupwraith |
@@ -36,5 +40,5 @@ on that firmware, grouped and commented. These are starting points: comment out 
 | `xiaomi-mitv-mssp3/` | Xiaomi MiTV-MSSP3 (machuca, MediaTek) | Android TV 11 | PatchWall, Mi analytics, Netflix observer; Chromecast, screensavers, unused streaming apps off by choice |
 | `xiaomi-tv-a-pro-2026/` | Xiaomi TV A Pro 75" 2026 (MiTV-MZTU0, river, MediaTek) | Google TV 14 | PatchWall/Mi Home tab, Mi analytics, TV Manager, updaters; setup wizard off, launcherx crash-loop notes |
 
-To add your TV, see [CONTRIBUTING.md](../CONTRIBUTING.md). The quickest way to get a list is to
+To add your TV, open a pull request with a new folder here. The quickest way to get a list is to
 run the prompt in [PROMPT.md](../PROMPT.md) and copy the packages your assistant disabled.
