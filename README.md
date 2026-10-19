@@ -2,6 +2,10 @@
 
 A fast, plain home screen for a slow Android TV. Black background, a header with the time, and a dock with the apps you actually use.
 
+![TV Home on a 1080p Android TV: clock and date, Inputs, Wi-Fi and Settings pills, a dock with Netflix, YouTube and All apps, a VPN status chip and an Add app button](docs/home.png)
+
+*A real screenshot from an Android 11 TV with 1.4 GB of RAM. The Wi-Fi name is replaced with a generic label.*
+
 - **Header:** greeting, clock, date, and three pills: Inputs, Wi-Fi (shows the network name), Settings.
 - **Dock:** Netflix, YouTube, and an All apps tile that opens every other app A to Z. The row scrolls sideways when it gets long.
 - **Add app:** the pill at the bottom-right of the row opens a picker and pins the app you choose. Hold OK on a tile to remove it. Your choices are saved on the TV.
