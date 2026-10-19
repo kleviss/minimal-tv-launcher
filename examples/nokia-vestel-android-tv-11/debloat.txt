@@ -2,8 +2,10 @@
 # RTOC.251019.001, 1.4 GB RAM, 32-bit ARM, low_ram flag set). 1080p, density 320.
 # Stock launcher: com.google.android.tvlauncher (disabled by launcher/build-and-install.sh).
 #
-# Group A and a trial set (the Vestel reporter, voice assistant, Chromecast and phone remote) were applied and
-# measured on this TV on 2026-10-19. Spotify and the other group C lines were left alone.
+# Group A and a trial set (the Vestel reporter, voice assistant and phone remote) were applied and measured
+# on this TV on 2026-10-19. Spotify and the other group C lines were left alone.
+# Chromecast was in the trial too, but it is back on: without it the TV disappears from the cast list in
+# Chrome and on phones. Re-enabling needs a TV restart before it is advertised again.
 # Apply:   TV_HOST=<tv ip> tools/disable.sh examples/nokia-vestel-android-tv-11/debloat.txt
 # Undo only this list (the launcher stays Home):
 #          TV_HOST=<tv ip> tools/venv/bin/python -I tools/tv.py "for p in $(grep -vE '^[[:space:]]*(#|$)' examples/nokia-vestel-android-tv-11/debloat.txt | awk '{print $1}' | tr '\n' ' '); do pm enable \$p; done"
@@ -16,6 +18,8 @@
 # Measured on this TV while YouTube was playing: 1.4 GB total, about 480 MB available, load average 73.
 # Group A result, three readings each with YouTube in the foreground: available memory went from about
 # 272 MB to about 309 MB (+36 MB, readings vary by +-17 MB). Only two of group A were running (~104 MB RSS).
+# Trial set result, same method: about 198 MB to about 248 MB (+50 MB). That run included Chromecast, which is
+# back on now, so expect roughly 54 MB less than that from the trial set.
 # The "MB" notes are resident memory (RSS) of each process while it was running. RSS counts shared
 # libraries too, so the real saving is smaller. Measure free memory before and after instead of trusting it.
 #
@@ -38,7 +42,7 @@ com.vestel.vestelreporter                           # Vestel telemetry / reporte
 # ---- C. Your call: real features, disable only what you never use ----------------------------------
 
 com.google.android.katniss                          # voice assistant. The mic button on the remote stops working (~53 MB). Trial: applied
-com.google.android.apps.mediashell                  # Chromecast built-in: casting from your phone stops (~54 MB). Trial: applied
+#com.google.android.apps.mediashell                 # Chromecast built-in: the TV vanishes from Chrome's and phones' cast lists (~54 MB)
 com.google.android.tv.remote.service                # "Google TV" phone app as a remote stops working (~41 MB). Trial: applied
 #com.google.android.videos                          # Play Movies & TV (Google is retiring it)
 #com.google.android.youtube.tvmusic                 # YouTube Music
