@@ -8,7 +8,7 @@
     android:background="@drawable/row_bg"
     android:singleLine="true"
     android:ellipsize="end"
-    android:textColor="@color/pill_text"
+    android:textColor="@color/text"
     android:textSize="15sp"
     android:fontFamily="sans-serif-medium"
     android:focusable="true"

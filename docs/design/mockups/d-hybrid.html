@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en" data-wp="1" data-focus="netflix" data-vpn="off" data-corners="1">
+<head>
+<meta charset="utf-8">
+<title>TV Home · D · Hybrid</title>
+<!--
+  Direction D, the hybrid the owner chose after seeing A, B and C
+  ----------------------------------------------------------------
+  Base: C (lock screen). Centred greeting / big Roboto Light clock / date near the top,
+  the photo left alone through the middle, light frosted material tinted per wallpaper,
+  the focused tile lifts (scale + soft shadow, never a ring).
+
+  Merged in:
+    from A   the focused app's name ABOVE the row, 64px Roboto Light, left-aligned to the
+             first tile; the VPN chip bottom left and Add app bottom right, under the row.
+    from B   the pill focus state (fills to .86, scale 1.06, one soft shadow), the Wi-Fi
+             glyph, and the 1px hairline that keeps the white tiles visible on pale photos.
+    new      the rounded-corner mask (48px, pure black outside), on by default.
+
+  Two regions, two colour pairs
+  -----------------------------
+  Every piece of chrome belongs to one of two regions and takes that region's pair
+  (material tint + ink). TOP = pills, greeting, clock, date. DOCK = app name, tiles, VPN
+  chip, Add app. The pair is "light frost + dark ink" on a pale photo and "dark frost +
+  light ink" on a dark one. THEMES below hard-codes the pair per placeholder; the real app
+  will sample the blurred photo under each region (mean luminance of the region's box) and
+  pick the pair with the better contrast, region by region. placeholder-4 is the test case:
+  its top is dark umber (L≈0.06) so TOP flips to dark frost + light ink, its bottom is pale
+  sand (L≈0.45) so DOCK keeps the light pair. The focused-tile shadow and the pill shadow
+  are always warm umber, whichever pair is in use.
+
+  Scrims: text that sits on the photo itself (the clock block, the app name) gets a soft
+  gradient in its region's tint: a radial behind the clock block (tall enough to reach the
+  date) and a linear lift confined to the dock region (from y=560, full strength by the
+  name's cap line at y≈622; the photo's middle band between the date and the name is left
+  alone). Both are the region's tint, so they darken on a dark pair and lighten on a light
+  one, and both are near-invisible on a pale photo. The dock lift's strength is per theme
+  (--d-scrim): .16 on placeholders 1 and 3, .30 on placeholder-2 where the brush stroke's
+  edge runs under the first letter of the name, .34 on placeholder-4 where the name lands
+  in the photo's dark-to-pale transition (L≈0.23) and needs the lift to reach 5:1.
+  --d-halo (a letter-shaped scrim on the name) stays in as a mechanism but is 0 on all
+  four: a halo on a mid-tone photo reads as glow, which this design never wants; the dock
+  lift does that job instead.
+
+  Material is iOS 18: translucent, blurred, a 1px light inner edge, matte. No gloss, no
+  refraction. The VPN chip is a status label, not a button: no material at all, a 14px dot
+  and 26px Regular text sitting straight on the dock lift. Add app is a real button: full
+  pill material, 28px Medium, 56px.
+
+  Focus on a pill fills it to .86 (B). The fill is the pair's own tint on the LIGHT pair
+  (brighter than rest) but a lighter umber on the DARK pair (--t-focus-tint): filling with
+  the dark tint itself would make the focused pill the darkest thing on screen and read as
+  pressed, where the dock's lifted tile reads as raised. Either way the focused pill is
+  lighter than its neighbours.
+
+  Static page; the only state is focus. Nothing animates.
+  ?wp=1|2|3|4 (no wp: one of the four at random, as the TV does on power-on)
+  ?focus=netflix|youtube|apps|inputs (default netflix; on a pill the name slot stays empty)
+  ?vpn=off|us (default off)
+  ?corners=0 turns the rounded-corner mask off.
+-->
+<script>
+  // Resolve the URL state and the theme before first paint, so nothing flashes.
+  (function () {
+    var p = new URLSearchParams(location.search);
+    var wp = parseInt(p.get('wp'), 10);
+    if (!(wp >= 1 && wp <= 4)) wp = 1 + Math.floor(Math.random() * 4);
+    var focus = p.get('focus');
+    if (['netflix', 'youtube', 'apps', 'inputs'].indexOf(focus) < 0) focus = 'netflix';
+    var vpn = p.get('vpn');
+    if (['off', 'us'].indexOf(vpn) < 0) vpn = 'off';
+    var corners = p.get('corners') === '0' ? '0' : '1';
+
+    // A pair: material tint (rgb triplet), ink, resting / focused material opacity, inner edge,
+    // and what a focused pill fills with (focusTint, focusEdge). LIGHT fills with its own tint,
+    // which is brighter than rest. DARK fills with a lighter umber so focus lights up rather
+    // than sinks, and its inner edge comes up to .30 so the lit pill keeps a crisp rim.
+    function LIGHT(tint, ink) { return { tint: tint, ink: ink, mat: '.56', focus: '.86', edge: 'rgba(255,255,255,.35)', focusTint: tint,         focusEdge: 'rgba(255,255,255,.35)' }; }
+    function DARK(tint, ink)  { return { tint: tint, ink: ink, mat: '.52', focus: '.86', edge: 'rgba(255,255,255,.16)', focusTint: '96, 80, 70', focusEdge: 'rgba(255,255,255,.30)' }; }
+
+    // Per wallpaper: the TOP pair, the DOCK pair, and the strength of the lift under the dock.
+    // The real app samples the photo under each region and picks the pair; see the note above.
+    // halo: a letter-shaped scrim on the app name. Kept as a knob, 0 everywhere: where the
+    // photo under the name is too dark (placeholder-2), the scrim is raised instead.
+    var THEMES = {
+      1: { top: LIGHT('255, 250, 240', '#33281f'), dock: LIGHT('255, 250, 240', '#33281f'), scrim: '.16', halo: '0' },  // dune: warm cream, umber ink
+      2: { top: LIGHT('255, 251, 245', '#2b221c'), dock: LIGHT('255, 251, 245', '#2b221c'), scrim: '.30', halo: '0' },  // ink: paper white, darker ink; brush stroke under the name
+      3: { top: LIGHT('250, 250, 242', '#2b2d27'), dock: LIGHT('250, 250, 242', '#2b2d27'), scrim: '.16', halo: '0' },  // sage: cool cream, green-black ink
+      4: { top: DARK('38, 28, 22', '#f3ece2'),     dock: LIGHT('252, 246, 236', '#33281f'), scrim: '.34', halo: '0' }   // dusk: dark umber top, pale sand bottom
+    };
+
+    var FILES = { 1: 'placeholder-1-dune.jpg', 2: 'placeholder-2-ink.jpg', 3: 'placeholder-3-sage.jpg', 4: 'placeholder-4-dusk.jpg' };
+
+    var h = document.documentElement, s = h.style, t = THEMES[wp];
+    h.setAttribute('data-wp', String(wp));
+    h.setAttribute('data-focus', focus);
+    h.setAttribute('data-vpn', vpn);
+    h.setAttribute('data-corners', corners);
+    h.setAttribute('data-wallpaper', '../wallpapers/' + FILES[wp]);
+
+    // Start fetching the photo now, before the body parses: a headless screenshot can
+    // otherwise catch the JPEG with its last rows not yet decoded (see the <img> below).
+    var link = document.createElement('link');
+    link.rel = 'preload'; link.as = 'image'; link.href = '../wallpapers/' + FILES[wp];
+    document.head.appendChild(link);
+    s.setProperty('--t-tint', t.top.tint);  s.setProperty('--t-ink', t.top.ink);
+    s.setProperty('--t-mat', t.top.mat);    s.setProperty('--t-focus', t.top.focus);  s.setProperty('--t-edge', t.top.edge);
+    s.setProperty('--t-focus-tint', t.top.focusTint);  s.setProperty('--t-focus-edge', t.top.focusEdge);
+    s.setProperty('--d-tint', t.dock.tint); s.setProperty('--d-ink', t.dock.ink);
+    s.setProperty('--d-mat', t.dock.mat);   s.setProperty('--d-focus', t.dock.focus); s.setProperty('--d-edge', t.dock.edge);
+    s.setProperty('--d-focus-tint', t.dock.focusTint); s.setProperty('--d-focus-edge', t.dock.focusEdge);
+    s.setProperty('--d-scrim', t.scrim);
+    s.setProperty('--d-halo', t.halo);
+  })();
+</script>
+<style>
+  :root {
+    --blur: 24px;
+    --shadow: 45, 30, 18;                 /* warm umber, every shadow on the page */
+    --hair: rgba(34, 28, 23, .08);        /* hairline on the white tiles */
+
+    /* Region pairs, overwritten per wallpaper by the script above (THEMES). */
+    --t-tint: 255, 250, 240; --t-ink: #33281f; --t-mat: .56; --t-focus: .86; --t-edge: rgba(255,255,255,.35);
+    --t-focus-tint: 255, 250, 240; --t-focus-edge: rgba(255,255,255,.35);
+    --d-tint: 255, 250, 240; --d-ink: #33281f; --d-mat: .56; --d-focus: .86; --d-edge: rgba(255,255,255,.35);
+    --d-focus-tint: 255, 250, 240; --d-focus-edge: rgba(255,255,255,.35);
+    --d-scrim: .16;
+    --d-halo: 0;
+  }
+
+  html, body { width: 1920px; height: 1080px; margin: 0; padding: 0; overflow: hidden; }
+  body {
+    position: relative;
+    background: #e6ddcd;
+    font-family: Roboto, system-ui, sans-serif;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Each region resolves its pair into the generic variables the material reads. */
+  .region-top  { --tint: var(--t-tint); --ink: var(--t-ink); --mat: var(--t-mat); --focus: var(--t-focus); --edge: var(--t-edge); --focus-tint: var(--t-focus-tint); --focus-edge: var(--t-focus-edge); color: var(--ink); }
+  .region-dock { --tint: var(--d-tint); --ink: var(--d-ink); --mat: var(--d-mat); --focus: var(--d-focus); --edge: var(--d-edge); --focus-tint: var(--d-focus-tint); --focus-edge: var(--d-focus-edge); color: var(--ink); }
+
+  /* Photo. An <img> with decoding="sync" rather than a CSS background: it blocks the load
+     event and decodes synchronously, so a headless screenshot never catches it half-decoded. */
+  .wallpaper {
+    position: absolute; inset: 0; width: 1920px; height: 1080px; display: block;
+    object-fit: cover; object-position: center;
+  }
+
+  /* Two soft scrims in the regions' tints. Near-invisible on a pale photo. The top radial is
+     tall enough that its 72% stop lands below the date (y≈420); the dock lift starts at
+     y=560 and is at full strength by the name's cap line (y≈622), so the photo between the
+     date and the name is untouched. */
+  .scrim-top {
+    position: absolute; left: 0; right: 0; top: 0; height: 560px;
+    background: radial-gradient(ellipse 62% 88% at 50% 34%, rgba(var(--t-tint), .34), rgba(var(--t-tint), 0) 72%);
+  }
+  /* Eases in over 160px (y 500-660) so there is no visible band where the lift starts; full
+     strength from the name's cap line down. The middle of the photo above y=500 is untouched. */
+  .scrim-dock {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 580px;
+    background: linear-gradient(180deg,
+      rgba(var(--d-tint), 0) 0%,
+      rgba(var(--d-tint), calc(var(--d-scrim) * .18)) 10%,
+      rgba(var(--d-tint), calc(var(--d-scrim) * .55)) 19%,
+      rgba(var(--d-tint), var(--d-scrim)) 28%,
+      rgba(var(--d-tint), var(--d-scrim)) 100%);
+  }
+
+  /* iOS 18 material: translucent, blurred, a 1px light inner edge. Matte. */
+  .material {
+    background: rgba(var(--tint), var(--mat));
+    -webkit-backdrop-filter: blur(var(--blur));
+    backdrop-filter: blur(var(--blur));
+    box-shadow: inset 0 0 0 1px var(--edge);
+  }
+
+  /* ---------- top right: three pills ---------- */
+  .pills {
+    position: absolute; top: 72px; right: 72px;
+    display: flex; gap: 12px; align-items: center;
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 11px;
+    height: 56px; padding: 0 26px; border-radius: 28px;
+    font-size: 28px; line-height: 1; font-weight: 500; white-space: nowrap;
+    transform-origin: center;
+  }
+  .pill svg { width: 28px; height: 28px; flex: none; }
+  /* B's focus: fills to .86, scales 1.06, one soft shadow. The fill colour is the pair's
+     focus tint (own tint on LIGHT, a lighter umber on DARK), so it always lights up. */
+  .pill.is-focused {
+    background: rgba(var(--focus-tint), var(--focus));
+    transform: scale(1.06);
+    box-shadow: inset 0 0 0 1px var(--focus-edge), 0 14px 34px rgba(var(--shadow), .24);
+  }
+
+  /* ---------- top centre: greeting, clock, date ---------- */
+  .lock {
+    position: absolute; top: 156px; left: 0; right: 0;
+    text-align: center;
+  }
+  .greeting { font-size: 30px; line-height: 36px; font-weight: 400; opacity: .80; }
+  .clock {
+    margin-top: 6px;
+    font-size: 150px; line-height: 150px; font-weight: 300;
+    letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .date { margin-top: 10px; font-size: 36px; line-height: 44px; font-weight: 400; }   /* full ink: it is the lowest-contrast text on the page */
+
+  /* ---------- dock: name above, three 16:9 tiles, chip and Add app under ---------- */
+  .dock {
+    position: absolute; left: 344px; bottom: 72px;   /* 1232px row (3×384 + 2×40), centred; 72px+ clear of the mask */
+    width: 1232px;
+  }
+  .appname {
+    height: 72px; line-height: 72px; margin: 0 0 20px -2px;
+    font-size: 64px; font-weight: 300; letter-spacing: -.01em;
+    white-space: nowrap;
+    /* The name sits on the photo, lifted by the dock scrim. --d-halo is a letter-shaped
+       scrim (three stacked soft shadows in the dock tint) kept as a knob for a photo the
+       scrim alone cannot fix; it is 0 on all four placeholders, because a halo on a
+       mid-tone photo shows as a glow around the letters. */
+    text-shadow:
+      0 0 20px rgba(var(--tint), var(--d-halo)),
+      0 0 20px rgba(var(--tint), var(--d-halo)),
+      0 0 20px rgba(var(--tint), var(--d-halo));
+  }
+
+  /* 40px gap: the focused tile grows 1.08 (15px a side) and still keeps ~25px from its neighbour */
+  .tiles { display: flex; gap: 40px; }
+  .tile {
+    position: relative;
+    width: 384px; height: 216px; border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    transform-origin: center;
+  }
+  /* the white banners hold on a pale photo with a hairline */
+  .tile.netflix, .tile.youtube { box-shadow: inset 0 0 0 1px var(--hair); }
+  /* only the focused tile lifts: a little bigger, one soft shadow, nothing else */
+  .tile.is-focused { transform: scale(1.08); z-index: 2; }
+  .tile.netflix.is-focused, .tile.youtube.is-focused {
+    box-shadow: inset 0 0 0 1px var(--hair),
+      0 34px 68px -20px rgba(var(--shadow), .44),
+      0 10px 24px -8px rgba(var(--shadow), .20);
+  }
+  .tile.apps.is-focused {
+    box-shadow: inset 0 0 0 1px var(--edge),
+      0 34px 68px -20px rgba(var(--shadow), .44),
+      0 10px 24px -8px rgba(var(--shadow), .20);
+  }
+
+  /* Netflix banner, drawn here */
+  .tile.netflix { background: #fff; }
+  .tile.netflix .wordmark {
+    font-size: 58px; line-height: 1; font-weight: 900;
+    letter-spacing: -.035em; color: #e50914;
+  }
+
+  /* YouTube banner, drawn here */
+  .tile.youtube { background: #fbfbfb; gap: 14px; }
+  .tile.youtube .play {
+    width: 76px; height: 54px; border-radius: 16px; background: #ff0000;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tile.youtube .play svg { width: 26px; height: 28px; display: block; margin-left: 4px; }
+  .tile.youtube .yt { font-size: 48px; line-height: 1; font-weight: 500; letter-spacing: -.025em; color: #282828; }
+
+  /* All apps: material tile, 3×3 grid glyph and the label */
+  .tile.apps { --mat: .64; flex-direction: column; gap: 16px; }
+  .tile.apps .grid { display: grid; grid-template-columns: repeat(3, 14px); gap: 8px; }
+  .tile.apps .grid i { width: 14px; height: 14px; border-radius: 3px; background: var(--ink); opacity: .85; display: block; }
+  .tile.apps .label { font-size: 30px; line-height: 1; font-weight: 500; }
+
+  /* under the row: VPN status left, Add app right */
+  .under {
+    margin-top: 28px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  /* a status label, not a button: no material, Regular weight, dot + text straight on the
+     dock lift; the dot sits on the row's left edge under the first tile */
+  .chip {
+    display: inline-flex; align-items: center; gap: 12px;
+    height: 46px; padding: 0;
+    font-size: 26px; line-height: 1; font-weight: 400; white-space: nowrap;
+  }
+  /* the dot is the on/off signal: 14px, and dark enough to hold ≥3.5:1 straight on the
+     photo (it has no chip body behind it any more): grey off, deep green on */
+  .chip .dot { width: 14px; height: 14px; border-radius: 50%; background: #665d56; flex: none; }
+  html[data-vpn="us"] .chip .dot { background: #23683a; }
+  .chip span[data-vpn] { display: none; }
+  html[data-vpn="off"] .chip span[data-vpn="off"],
+  html[data-vpn="us"]  .chip span[data-vpn="us"] { display: inline; }
+
+  .addapp {
+    display: inline-flex; align-items: center; gap: 12px;
+    height: 56px; padding: 0 26px 0 22px; border-radius: 28px;
+    font-size: 28px; line-height: 1; font-weight: 500; white-space: nowrap;
+  }
+  .addapp svg { width: 24px; height: 24px; flex: none; }
+
+  /* ---------- rounded screen corners ---------- */
+  /* One overlay: a 48px-radius rectangle the size of the screen, with a wide pure-black
+     box-shadow. Only the four corner notches show the shadow; everything else is untouched. */
+  .corners {
+    position: absolute; inset: 0; border-radius: 48px;
+    box-shadow: 0 0 0 120px #000;
+    pointer-events: none; z-index: 50;
+  }
+  html[data-corners="0"] .corners { display: none; }
+</style>
+</head>
+<body>
+  <img class="wallpaper" id="wallpaper" decoding="sync" fetchpriority="high" alt="">
+  <script>
+    (function () {
+      var img = document.getElementById('wallpaper');
+      img.src = document.documentElement.getAttribute('data-wallpaper');
+      if (img.decode) img.decode().catch(function () {});   // ask for the full decode straight away
+    })();
+  </script>
+  <div class="scrim-top"></div>
+  <div class="scrim-dock"></div>
+
+  <nav class="pills region-top" aria-label="Status">
+    <div class="pill material" data-focus="inputs">Inputs</div>
+    <div class="pill material">
+      <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M2.5 10.5a17 17 0 0 1 23 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M6.5 15a11.3 11.3 0 0 1 15 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M10.5 19.4a5.6 5.6 0 0 1 7 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="14" cy="23.2" r="1.8" fill="currentColor"/></svg>
+      Home Wi-Fi
+    </div>
+    <div class="pill material">Settings</div>
+  </nav>
+
+  <header class="lock region-top">
+    <div class="greeting">Good afternoon</div>
+    <div class="clock">14:16</div>
+    <div class="date">Monday 19 October</div>
+  </header>
+
+  <section class="dock region-dock">
+    <div class="appname" id="appname"></div>
+    <div class="tiles">
+      <div class="tile netflix" data-focus="netflix" data-name="Netflix"><span class="wordmark">NETFLIX</span></div>
+      <div class="tile youtube" data-focus="youtube" data-name="YouTube">
+        <span class="play"><svg viewBox="0 0 26 28" aria-hidden="true"><path d="M2 2.6c0-1.5 1.6-2.4 2.9-1.6l19 11.4c1.2.8 1.2 2.5 0 3.2l-19 11.4C3.6 27.8 2 26.9 2 25.4z" fill="#fff"/></svg></span>
+        <span class="yt">YouTube</span>
+      </div>
+      <div class="tile apps material" data-focus="apps" data-name="All apps">
+        <span class="grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="label">All apps</span>
+      </div>
+    </div>
+    <div class="under">
+      <div class="chip"><span class="dot"></span><span data-vpn="off">VPN off</span><span data-vpn="us">VPN · United States</span></div>
+      <div class="addapp material">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M14 5v18M5 14h18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+        Add app
+      </div>
+    </div>
+  </section>
+
+  <div class="corners"></div>
+
+<script>
+  // Focus: one element has it. The name slot follows it via data-name; a pill has none, so the slot stays empty.
+  (function () {
+    var focus = document.documentElement.getAttribute('data-focus');
+    // Scoped to the body: <html> carries data-focus too, and would match first.
+    var el = document.body.querySelector('[data-focus="' + focus + '"]');
+    el.classList.add('is-focused');
+    document.getElementById('appname').textContent = el.dataset.name || '';
+  })();
+</script>
+</body>
+</html>

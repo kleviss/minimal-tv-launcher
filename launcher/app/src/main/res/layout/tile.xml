@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One dock tile: the app's banner (or icon and name), and a ring that shows while focused. -->
+<!-- One dock tile, 16:9. The app's banner, or (All apps and apps without a banner) a frosted tile with an icon
+     and a name. Focus = scale up a little plus a soft shadow, set in code; no ring. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="256dp"
-    android:layout_height="144dp"
-    android:layout_margin="14dp"
+    android:layout_width="192dp"
+    android:layout_height="108dp"
+    android:layout_marginEnd="20dp"
     android:clipChildren="false"
     android:focusable="true"
     android:clickable="true">
@@ -12,27 +13,19 @@
         android:id="@+id/image"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="centerCrop" />
+        android:scaleType="centerCrop"
+        android:contentDescription="@null" />
 
     <TextView
         android:id="@+id/label"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:paddingBottom="14dp"
+        android:paddingBottom="16dp"
         android:gravity="center"
         android:singleLine="true"
         android:ellipsize="end"
-        android:textColor="@color/text"
         android:textSize="15sp"
         android:fontFamily="sans-serif-medium"
         android:visibility="gone" />
-
-    <!-- Sits 5dp outside the tile so it shows on white banners too (Netflix). -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_margin="-5dp"
-        android:background="@drawable/focus_ring"
-        android:duplicateParentState="true" />
 </FrameLayout>

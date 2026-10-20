@@ -1,201 +1,174 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Home screen, the "hybrid" design (docs/design/mockups/d-hybrid.html). Mockup px / 2 = dp on this 320 dpi TV.
+     Layers, bottom to top: wallpaper, two soft scrims, the chrome, the rounded-corner mask (added in code). -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
     android:clipChildren="false">
 
-    <LinearLayout
+    <ImageView
+        android:id="@+id/wallpaper"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:contentDescription="@null" />
+
+    <!-- Radial lift behind the clock block and a linear lift under the dock; both painted in code in the
+         region's tint so they darken on a dark pair and lighten on a light one. -->
+    <View
+        android:id="@+id/scrimTop"
+        android:layout_width="match_parent"
+        android:layout_height="280dp" />
+
+    <View
+        android:id="@+id/scrimDock"
+        android:layout_width="match_parent"
+        android:layout_height="380dp"
+        android:layout_gravity="bottom" />
+
+    <!-- Top right: the three pills. -->
+    <LinearLayout
+        android:id="@+id/pills"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="36dp"
+        android:layout_marginEnd="36dp"
+        android:orientation="horizontal"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <TextView
+            android:id="@+id/btnInputs"
+            style="@style/Pill"
+            android:text="@string/inputs" />
+
+        <TextView
+            android:id="@+id/btnNetwork"
+            style="@style/Pill"
+            android:maxWidth="190dp"
+            android:drawableStart="@drawable/ic_wifi"
+            android:text="@string/wifi" />
+
+        <TextView
+            android:id="@+id/btnSettings"
+            style="@style/Pill"
+            android:text="@string/settings" />
+    </LinearLayout>
+
+    <!-- Top centre: greeting, clock, date. -->
+    <LinearLayout
+        android:id="@+id/lock"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="78dp"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:id="@+id/greeting"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:alpha="0.8"
+            android:textSize="15sp"
+            android:fontFamily="sans-serif" />
+
+        <TextClock
+            android:id="@+id/clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:format12Hour="h:mm"
+            android:format24Hour="HH:mm"
+            android:includeFontPadding="false"
+            android:textSize="75sp"
+            android:fontFamily="sans-serif-light"
+            android:letterSpacing="-0.02" />
+
+        <TextClock
+            android:id="@+id/date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:format12Hour="EEEE d MMMM"
+            android:format24Hour="EEEE d MMMM"
+            android:singleLine="true"
+            android:textSize="18sp"
+            android:fontFamily="sans-serif" />
+    </LinearLayout>
+
+    <!-- Bottom: the focused app's name, the row of tiles, then VPN status left and Add app right. -->
+    <LinearLayout
+        android:id="@+id/dockBlock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="36dp"
         android:orientation="vertical"
         android:clipChildren="false"
-        android:clipToPadding="false"
-        android:paddingStart="56dp"
-        android:paddingEnd="56dp"
-        android:paddingTop="28dp"
-        android:paddingBottom="28dp">
+        android:clipToPadding="false">
 
-        <!-- Header: greeting, time and date on the left, pills on the right. -->
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/appName"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="-1dp"
+            android:layout_marginBottom="10dp"
+            android:gravity="center_vertical"
+            android:singleLine="true"
+            android:textSize="32sp"
+            android:fontFamily="sans-serif-light"
+            android:letterSpacing="-0.01" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_toStartOf="@+id/topButtons"
-                android:layout_marginEnd="16dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/greeting"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:singleLine="true"
-                    android:ellipsize="end"
-                    android:textAllCaps="true"
-                    android:textColor="@color/text_dim"
-                    android:textSize="13sp"
-                    android:fontFamily="sans-serif-medium"
-                    android:letterSpacing="0.22" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="bottom"
-                    android:baselineAligned="false">
-
-                    <TextClock
-                        android:id="@+id/clock"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:format12Hour="h:mm"
-                        android:format24Hour="HH:mm"
-                        android:includeFontPadding="false"
-                        android:textColor="@color/text"
-                        android:textSize="56sp"
-                        android:fontFamily="sans-serif-light"
-                        android:letterSpacing="-0.03" />
-
-                    <TextClock
-                        android:id="@+id/ampm"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:layout_marginBottom="9dp"
-                        android:format12Hour="a"
-                        android:format24Hour=""
-                        android:textAllCaps="true"
-                        android:textColor="@color/text_dim"
-                        android:textSize="16sp"
-                        android:fontFamily="sans-serif-medium"
-                        android:letterSpacing="0.08" />
-
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="26dp"
-                        android:layout_marginStart="16dp"
-                        android:layout_marginEnd="16dp"
-                        android:layout_marginBottom="9dp"
-                        android:background="#33FFFFFF" />
-
-                    <TextClock
-                        android:id="@+id/date"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="9dp"
-                        android:format12Hour="EEEE  d MMMM"
-                        android:format24Hour="EEEE  d MMMM"
-                        android:singleLine="true"
-                        android:textAllCaps="true"
-                        android:textColor="@color/text_dim"
-                        android:autoSizeTextType="uniform"
-                        android:autoSizeMinTextSize="12sp"
-                        android:autoSizeMaxTextSize="18sp"
-                        android:autoSizeStepGranularity="1sp"
-                        android:fontFamily="sans-serif"
-                        android:letterSpacing="0.12" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/topButtons"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_marginTop="6dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/btnInputs"
-                    style="@style/Pill"
-                    android:drawableStart="@drawable/ic_input"
-                    android:text="@string/inputs" />
-
-                <TextView
-                    android:id="@+id/btnNetwork"
-                    style="@style/Pill"
-                    android:maxWidth="170dp"
-                    android:drawableStart="@drawable/ic_wifi"
-                    android:text="@string/wifi" />
-
-                <TextView
-                    android:id="@+id/btnSettings"
-                    style="@style/Pill"
-                    android:drawableStart="@drawable/ic_settings"
-                    android:text="@string/settings" />
-            </LinearLayout>
-        </RelativeLayout>
-
-        <!-- Dock area, centred in the space under the header: the row of pinned apps, Add app pill below it. -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
+        <!-- Scrolls sideways once more apps are pinned than fit. Tiles are 192x108dp with 20dp gaps. -->
+        <HorizontalScrollView
+            android:id="@+id/dockScroll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:overScrollMode="never"
             android:clipChildren="false"
             android:clipToPadding="false">
 
-            <!-- Scrolls sideways once more apps are pinned than fit on screen. -->
-            <HorizontalScrollView
-                android:layout_width="match_parent"
+            <LinearLayout
+                android:id="@+id/dock"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fillViewport="true"
-                android:scrollbars="none"
-                android:overScrollMode="never"
+                android:orientation="horizontal"
                 android:clipChildren="false"
-                android:clipToPadding="false"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp">
+                android:clipToPadding="false" />
+        </HorizontalScrollView>
 
-                <LinearLayout
-                    android:id="@+id/dock"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:clipChildren="false"
-                    android:clipToPadding="false" />
-            </HorizontalScrollView>
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="28dp"
+            android:layout_marginTop="14dp"
+            android:clipChildren="false">
 
-            <!-- Under the row: VPN status on the left, Add app on the right. -->
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+            <!-- A status label, not a button: no material, a dot and text straight on the dock lift. -->
+            <TextView
+                android:id="@+id/vpnStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_gravity="start|center_vertical"
+                android:gravity="center_vertical"
+                android:drawableStart="@drawable/ic_dot"
+                android:drawablePadding="6dp"
+                android:singleLine="true"
+                android:text="@string/vpn_off"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif" />
 
-                <TextView
-                    android:id="@+id/vpnStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="42dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="14dp"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="20dp"
-                    android:gravity="center"
-                    android:background="@drawable/chip_bg"
-                    android:drawableStart="@drawable/ic_dot"
-                    android:drawablePadding="10dp"
-                    android:singleLine="true"
-                    android:text="@string/vpn_off"
-                    android:textColor="@color/text_dim"
-                    android:textSize="15sp"
-                    android:fontFamily="sans-serif-medium" />
-
-                <TextView
-                    android:id="@+id/btnAdd"
-                    style="@style/Pill"
-                    android:layout_gravity="end"
-                    android:layout_marginStart="0dp"
-                    android:layout_marginEnd="14dp"
-                    android:drawableStart="@drawable/ic_add"
-                    android:text="@string/add_app" />
-            </FrameLayout>
-        </LinearLayout>
+            <TextView
+                android:id="@+id/btnAdd"
+                style="@style/Pill"
+                android:layout_gravity="end|center_vertical"
+                android:layout_marginStart="0dp"
+                android:drawableStart="@drawable/ic_add"
+                android:text="@string/add_app" />
+        </FrameLayout>
     </LinearLayout>
 </FrameLayout>

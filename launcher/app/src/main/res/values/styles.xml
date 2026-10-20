@@ -6,22 +6,19 @@
         <item name="android:windowAnimationStyle">@null</item>
     </style>
 
-    <!-- Rounded pill in the header; fills white when focused. -->
+    <!-- A frosted pill (background and colours set in code from the region's pair). 28dp = 56px tall. -->
     <style name="Pill">
         <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">42dp</item>
-        <item name="android:layout_marginStart">10dp</item>
-        <item name="android:paddingStart">16dp</item>
-        <item name="android:paddingEnd">20dp</item>
+        <item name="android:layout_height">28dp</item>
+        <item name="android:layout_marginStart">6dp</item>
+        <item name="android:paddingStart">13dp</item>
+        <item name="android:paddingEnd">13dp</item>
         <item name="android:gravity">center</item>
-        <item name="android:background">@drawable/pill_bg</item>
-        <item name="android:textColor">@color/pill_text</item>
-        <item name="android:textSize">15sp</item>
+        <item name="android:textSize">14sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:singleLine">true</item>
         <item name="android:ellipsize">end</item>
-        <item name="android:drawablePadding">9dp</item>
-        <item name="android:drawableTint">@color/pill_text</item>
+        <item name="android:drawablePadding">6dp</item>
         <item name="android:focusable">true</item>
         <item name="android:clickable">true</item>
     </style>

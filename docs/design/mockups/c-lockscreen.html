@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TV Home · Direction C · Lock screen</title>
+<!--
+  Direction C — "lock screen"
+  ---------------------------
+  iPhone lock-screen typography on a TV. The clock is the one memorable thing:
+  huge, thin, centred near the top, with the greeting small above it and the date
+  under it. The apps are a quiet shelf low on the screen; the focused app's name sits
+  under the shelf, centred. VPN chip and Add app pill sit at the shelf's two ends.
+
+  Material: LIGHT, tinted from the wallpaper.
+  Why light: all three placeholders (and the real photos, per the brief: "beige-toned")
+  are high-key. A dark pill at the opacity needed for white text (~55-60%) would be the
+  darkest object on screen and fight the photo. A light frost over cream is nearly
+  invisible as a shape, which is exactly how iOS 18 behaves on a pale wallpaper; the
+  deep-umber ink carries legibility (≈12:1 on cream, ≈4.6:1 on the frosted dark stroke
+  of placeholder 2). The ink colour is sampled from the wallpaper's shadow tone, as the
+  iOS lock screen picks a clock colour from the wallpaper.
+  If a real photo is dark overall, the app would flip the pair (dark frost, light ink);
+  the pair is one CSS variable set, see :root.
+
+  Static page. The only state is focus. ?wp=1|2|3 and ?focus=netflix|youtube|apps|inputs.
+-->
+<style>
+  :root {
+    /* Set per wallpaper by the script below (see THEMES). */
+    --tint: 255, 250, 240;      /* material tint, from the wallpaper's light tone */
+    --ink: #33281f;             /* text, from the wallpaper's shadow tone */
+    --mat: .56;                 /* material opacity */
+    --blur: 24px;
+  }
+
+  html, body { width: 1920px; height: 1080px; margin: 0; padding: 0; overflow: hidden; }
+  body {
+    position: relative;
+    background: #e6ddcd;
+    font-family: Roboto, system-ui, sans-serif;
+    font-weight: 400;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Photo */
+  .wallpaper {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+  }
+
+  /* One soft light scrim behind the clock so the ink survives a darker photo top.
+     Nearly invisible on the placeholders. The shelf has no scrim: tiles and chips
+     carry their own material, and the name is 60px ink right under a white tile. */
+  .scrim-top {
+    position: absolute; left: 0; right: 0; top: 0; height: 560px;
+    background: radial-gradient(ellipse 62% 72% at 50% 30%, rgba(var(--tint), .34), rgba(var(--tint), 0) 72%);
+  }
+
+  /* iOS 18 material: translucent, blurred, a 1px light inner edge. No gloss. */
+  .material {
+    background: rgba(var(--tint), var(--mat));
+    -webkit-backdrop-filter: blur(var(--blur));
+    backdrop-filter: blur(var(--blur));
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .35);
+  }
+
+  /* Pills, top right */
+  .pills {
+    position: absolute; top: 56px; right: 72px;
+    display: flex; gap: 12px;
+  }
+  .pill {
+    height: 52px; padding: 0 24px; border-radius: 26px;
+    font-size: 28px; line-height: 52px; font-weight: 500;
+    white-space: nowrap;
+    transform-origin: center;
+  }
+  .pill.is-focused {
+    transform: scale(1.08);
+    background: rgba(var(--tint), .82);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, .45),
+      0 18px 36px -12px rgba(45, 30, 18, .35),
+      0 4px 10px -4px rgba(45, 30, 18, .15);
+  }
+
+  /* Lock-screen block */
+  .lock {
+    position: absolute; top: 150px; left: 0; right: 0;
+    text-align: center;
+  }
+  .greeting {
+    font-size: 30px; line-height: 36px; font-weight: 400;
+    opacity: .80;
+  }
+  .clock {
+    margin-top: 6px;
+    font-size: 168px; line-height: 168px; font-weight: 300;
+    letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .date {
+    margin-top: 10px;
+    font-size: 36px; line-height: 44px; font-weight: 400;
+    opacity: .82;
+  }
+
+  /* Dock: centred row of three 16:9 tiles, name under it, chip and pill at the ends */
+  .dock {
+    position: absolute; top: 696px; left: 50%;
+    width: 1208px; transform: translateX(-50%);
+  }
+  .tiles { display: flex; gap: 28px; }
+  .tile {
+    position: relative;
+    width: 384px; height: 216px; border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    transform-origin: center;
+  }
+  .tile.is-focused {
+    transform: scale(1.08);
+    z-index: 2;
+    box-shadow:
+      0 34px 68px -20px rgba(45, 30, 18, .44),
+      0 10px 24px -8px rgba(45, 30, 18, .20);
+  }
+
+  /* Netflix banner, drawn here */
+  .tile.netflix { background: #fff; }
+  .tile.netflix .wordmark {
+    font-size: 58px; line-height: 1; font-weight: 900;
+    letter-spacing: -.035em; color: #e50914;
+  }
+
+  /* YouTube banner, drawn here */
+  .tile.youtube { background: #fbfbfb; gap: 14px; }
+  .tile.youtube .play {
+    width: 76px; height: 54px; border-radius: 16px; background: #ff0000;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tile.youtube .play svg { width: 26px; height: 28px; display: block; margin-left: 4px; }
+  .tile.youtube .yt { font-size: 48px; line-height: 1; font-weight: 500; letter-spacing: -.025em; color: #282828; }
+
+  /* All apps: material tile with a 3×3 grid glyph and the label */
+  .tile.apps { --mat: .64; flex-direction: column; gap: 16px; }
+  .tile.apps .grid {
+    display: grid; grid-template-columns: repeat(3, 14px); gap: 8px;
+  }
+  .tile.apps .grid i { width: 14px; height: 14px; border-radius: 3px; background: var(--ink); opacity: .85; display: block; }
+  .tile.apps .label { font-size: 30px; line-height: 1; font-weight: 500; }
+
+  /* Line under the shelf */
+  .under {
+    position: relative;
+    margin-top: 34px; height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .appname {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    font-size: 60px; line-height: 1; font-weight: 400; letter-spacing: -.01em;
+    white-space: nowrap;
+  }
+  .appname.is-hidden { opacity: 0; }
+  .chip, .addapp {
+    height: 52px; border-radius: 26px;
+    display: flex; align-items: center; gap: 12px;
+    font-weight: 500; white-space: nowrap;
+  }
+  .chip { padding: 0 22px 0 18px; font-size: 26px; }
+  .chip .dot { width: 12px; height: 12px; border-radius: 50%; background: #4f9c5f; }
+  .chip .dot.off { background: #9a918a; }
+  .addapp { padding: 0 24px 0 20px; font-size: 28px; }
+  .addapp .plus { position: relative; width: 18px; height: 18px; }
+  .addapp .plus::before, .addapp .plus::after {
+    content: ""; position: absolute; background: var(--ink); border-radius: 1px;
+  }
+  .addapp .plus::before { left: 0; top: 8px; width: 18px; height: 2px; }
+  .addapp .plus::after  { left: 8px; top: 0; width: 2px; height: 18px; }
+</style>
+</head>
+<body>
+  <div class="wallpaper" id="wallpaper"></div>
+  <div class="scrim-top"></div>
+
+  <nav class="pills" aria-label="Status">
+    <div class="pill material" data-focus="inputs">Inputs</div>
+    <div class="pill material">Home Wi-Fi</div>
+    <div class="pill material">Settings</div>
+  </nav>
+
+  <header class="lock">
+    <div class="greeting">Good afternoon</div>
+    <div class="clock">14:16</div>
+    <div class="date">Monday 19 October</div>
+  </header>
+
+  <section class="dock">
+    <div class="tiles">
+      <div class="tile netflix" data-focus="netflix" data-name="Netflix"><span class="wordmark">NETFLIX</span></div>
+      <div class="tile youtube" data-focus="youtube" data-name="YouTube">
+        <span class="play"><svg viewBox="0 0 26 28" aria-hidden="true"><path d="M2 2.6c0-1.5 1.6-2.4 2.9-1.6l19 11.4c1.2.8 1.2 2.5 0 3.2l-19 11.4C3.6 27.8 2 26.9 2 25.4z" fill="#fff"/></svg></span>
+        <span class="yt">YouTube</span>
+      </div>
+      <div class="tile apps material" data-focus="apps" data-name="All apps">
+        <span class="grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="label">All apps</span>
+      </div>
+    </div>
+    <div class="under">
+      <div class="chip material"><span class="dot"></span>VPN · United States</div>
+      <div class="appname" id="appname">Netflix</div>
+      <div class="addapp material"><span class="plus"></span>Add app</div>
+    </div>
+  </section>
+
+<script>
+  // Per-wallpaper material tint and ink, as the app will sample from the photo.
+  var THEMES = {
+    1: { tint: '255, 250, 240', ink: '#33281f' },   // dune: warm cream, umber ink
+    2: { tint: '255, 251, 245', ink: '#2b221c' },   // ink: paper white, darker ink
+    3: { tint: '250, 250, 242', ink: '#2b2d27' }    // sage: cool cream, green-black ink
+  };
+  var p = new URLSearchParams(location.search);
+  var wp = parseInt(p.get('wp'), 10);
+  if (!(wp >= 1 && wp <= 3)) wp = 1 + Math.floor(Math.random() * 3);
+  var focus = p.get('focus');
+  if (['netflix', 'youtube', 'apps', 'inputs'].indexOf(focus) < 0) focus = 'netflix';
+
+  var files = { 1: 'placeholder-1-dune.jpg', 2: 'placeholder-2-ink.jpg', 3: 'placeholder-3-sage.jpg' };
+  document.getElementById('wallpaper').style.backgroundImage = 'url(../wallpapers/' + files[wp] + ')';
+  document.documentElement.style.setProperty('--tint', THEMES[wp].tint);
+  document.documentElement.style.setProperty('--ink', THEMES[wp].ink);
+
+  var el = document.querySelector('[data-focus="' + focus + '"]');
+  el.classList.add('is-focused');
+  var nameEl = document.getElementById('appname');   // not "name": that is window.name
+  if (el.dataset.name) { nameEl.textContent = el.dataset.name; }
+  else { nameEl.classList.add('is-hidden'); }
+</script>
+</body>
+</html>

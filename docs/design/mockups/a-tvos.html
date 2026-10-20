@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en" data-wp="1" data-focus="netflix">
+<head>
+<meta charset="utf-8">
+<title>TV Home, direction A: tvOS faithful</title>
+<script>
+  // Pick wallpaper and focus from the URL before first paint. No wp: one of the three at random,
+  // which is what the TV does when it is switched on.
+  (function () {
+    var p = new URLSearchParams(location.search);
+    var wp = p.get('wp');
+    if (['1', '2', '3'].indexOf(wp) < 0) wp = String(1 + Math.floor(Math.random() * 3));
+    var focus = p.get('focus');
+    if (['netflix', 'youtube', 'apps', 'inputs'].indexOf(focus) < 0) focus = 'netflix';
+    var h = document.documentElement;
+    h.setAttribute('data-wp', wp);
+    h.setAttribute('data-focus', focus);
+  })();
+</script>
+<style>
+  /* ---------- canvas ---------- */
+  :root {
+    --margin: 96px;
+    --margin-top: 72px;
+    --tile-w: 432px;
+    --tile-h: 243px;            /* 16:9 */
+    --tile-gap: 32px;
+    --tile-radius: 18px;
+
+    /* one dark matte material for every piece of chrome */
+    --mat-bg: rgba(26, 22, 19, .55);
+    --mat-bg-focus: rgba(50, 44, 39, .66);
+    --mat-edge: rgba(255, 255, 255, .24);
+    --mat-blur: 22px;
+
+    --ink: 22, 18, 15;          /* warm near-black used for scrims and shadows */
+    --text: #ffffff;
+  }
+
+  html, body {
+    width: 1920px; height: 1080px; margin: 0; padding: 0; overflow: hidden;
+    background: #111;
+    font-family: Roboto, system-ui, sans-serif;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  body { position: relative; }
+
+  /* ---------- wallpaper ---------- */
+  /* An <img> rather than a CSS background so the file blocks the load event and decodes
+     synchronously; headless screenshots otherwise sometimes catch a half-decoded JPEG. */
+  .wallpaper {
+    position: absolute; inset: 0; width: 1920px; height: 1080px; display: block;
+    object-fit: cover; object-position: center;
+  }
+
+  /* Two scrims, each with one job: a soft top-left fall-off under the clock block,
+     and a gradient rising from the bottom third under the dock. The photo stays untouched
+     through the middle and the right. */
+  .scrim-top {
+    position: absolute; inset: 0;
+    background: radial-gradient(1440px 980px at -80px -120px,
+      rgba(var(--ink), .72) 0%,
+      rgba(var(--ink), .56) 36%,
+      rgba(var(--ink), .24) 62%,
+      rgba(var(--ink), 0) 100%);
+  }
+  .scrim-bottom {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg,
+      rgba(var(--ink), 0) 40%,
+      rgba(var(--ink), .30) 56%,
+      rgba(var(--ink), .50) 72%,
+      rgba(var(--ink), .62) 100%);
+  }
+
+  /* ---------- material ---------- */
+  .mat {
+    background: var(--mat-bg);
+    -webkit-backdrop-filter: blur(var(--mat-blur));
+    backdrop-filter: blur(var(--mat-blur));
+    box-shadow: inset 0 0 0 1px var(--mat-edge);
+  }
+
+  /* ---------- top left: greeting, clock, date ---------- */
+  .clockblock {
+    position: absolute; left: var(--margin); top: var(--margin-top);
+    text-shadow: 0 2px 22px rgba(var(--ink), .42);
+  }
+  .greeting {
+    font-size: 34px; font-weight: 400; line-height: 1.2; color: var(--text);
+    margin: 0 0 2px 2px;
+  }
+  .clock {
+    font-size: 144px; font-weight: 300; line-height: 1; letter-spacing: -.025em;
+    margin: 0 0 8px -4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .date {
+    font-size: 30px; font-weight: 400; line-height: 1.2; color: var(--text);
+    margin: 0 0 0 2px;
+  }
+
+  /* ---------- top right: three pills ---------- */
+  .pills {
+    position: absolute; right: var(--margin); top: var(--margin-top);
+    display: flex; gap: 14px; align-items: center;
+  }
+  .pill {
+    display: flex; align-items: center;
+    height: 58px; padding: 0 28px; border-radius: 999px;
+    font-size: 29px; font-weight: 400; line-height: 1; white-space: nowrap;
+  }
+  html[data-focus="inputs"] .pill-inputs {
+    background: var(--mat-bg-focus);
+    transform: scale(1.08);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .30), 0 18px 36px rgba(var(--ink), .40), 0 4px 10px rgba(var(--ink), .22);
+  }
+
+  /* ---------- centre-low: app name, dock row, chips ---------- */
+  .dock {
+    position: absolute; left: var(--margin); bottom: 72px;
+    width: calc(var(--tile-w) * 3 + var(--tile-gap) * 2);
+  }
+  .appname {
+    height: 72px; margin: 0 0 22px 2px;
+    font-size: 64px; font-weight: 300; line-height: 72px; letter-spacing: -.01em;
+    text-shadow: 0 2px 18px rgba(var(--ink), .30);
+  }
+  .appname span { display: none; }
+  html[data-focus="netflix"] .appname [data-for="netflix"],
+  html[data-focus="youtube"] .appname [data-for="youtube"],
+  html[data-focus="apps"]    .appname [data-for="apps"] { display: inline; }
+
+  .row { display: flex; gap: var(--tile-gap); }
+  .tile {
+    position: relative; width: var(--tile-w); height: var(--tile-h);
+    border-radius: var(--tile-radius); overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    transform-origin: 50% 50%;
+  }
+  /* only the focused tile lifts: a little bigger, a soft shadow, nothing else changes */
+  html[data-focus="netflix"] .tile-netflix,
+  html[data-focus="youtube"] .tile-youtube,
+  html[data-focus="apps"]    .tile-apps {
+    transform: scale(1.08);
+    z-index: 2;
+    box-shadow: 0 34px 64px -6px rgba(var(--ink), .50), 0 10px 22px rgba(var(--ink), .22);
+  }
+
+  /* Netflix: white banner, red wordmark */
+  .tile-netflix { background: #ffffff; }
+  .tile-netflix .mark {
+    font-size: 66px; font-weight: 900; letter-spacing: -.035em; color: #e50914; line-height: 1;
+    transform: scaleY(1.12);
+  }
+
+  /* YouTube: near-white banner, red play glyph, dark wordmark */
+  .tile-youtube { background: #f6f6f6; }
+  .tile-youtube .mark { display: flex; align-items: center; gap: 12px; }
+  .tile-youtube .play {
+    width: 66px; height: 46px; border-radius: 14px; background: #ff0000;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tile-youtube .play::after {
+    content: ""; display: block; margin-left: 4px;
+    border-style: solid; border-width: 11px 0 11px 19px; border-color: transparent transparent transparent #fff;
+  }
+  .tile-youtube .word { font-size: 50px; font-weight: 500; letter-spacing: -.025em; color: #212121; line-height: 1; }
+
+  /* All apps: same dark material, 3x3 grid glyph and the label */
+  .tile-apps { flex-direction: column; gap: 18px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 15px); gap: 9px; }
+  .grid3 i { display: block; width: 15px; height: 15px; border-radius: 4px; background: #fff; }
+  .tile-apps .label { font-size: 28px; font-weight: 400; line-height: 1; }
+  html[data-focus="apps"] .tile-apps { background: var(--mat-bg-focus); }
+
+  /* under the row */
+  .under {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 28px;
+  }
+  .chip {
+    display: flex; align-items: center; gap: 12px;
+    height: 54px; padding: 0 24px; border-radius: 999px;
+    font-size: 28px; font-weight: 400; line-height: 1; white-space: nowrap;
+  }
+  .chip .dot { width: 12px; height: 12px; border-radius: 50%; background: #a9a39c; flex: none; }
+  .chip .dot.on { background: #4ccb6b; }
+  .chip svg { width: 22px; height: 22px; flex: none; }
+</style>
+</head>
+<body>
+  <img class="wallpaper" id="wallpaper" decoding="sync" alt="">
+  <script>
+    (function () {
+      var files = { '1': 'placeholder-1-dune.jpg', '2': 'placeholder-2-ink.jpg', '3': 'placeholder-3-sage.jpg' };
+      var wp = document.documentElement.getAttribute('data-wp');
+      document.getElementById('wallpaper').src = '../wallpapers/' + files[wp];
+    })();
+  </script>
+  <div class="scrim-top"></div>
+  <div class="scrim-bottom"></div>
+
+  <div class="clockblock">
+    <div class="greeting">Good afternoon</div>
+    <div class="clock">14:16</div>
+    <div class="date">Monday 19 October</div>
+  </div>
+
+  <div class="pills">
+    <div class="pill mat pill-inputs"><span>Inputs</span></div>
+    <div class="pill mat pill-wifi"><span>Home Wi-Fi</span></div>
+    <div class="pill mat pill-settings"><span>Settings</span></div>
+  </div>
+
+  <div class="dock">
+    <div class="appname">
+      <span data-for="netflix">Netflix</span><span data-for="youtube">YouTube</span><span data-for="apps">All apps</span>
+    </div>
+    <div class="row">
+      <div class="tile tile-netflix"><div class="mark">NETFLIX</div></div>
+      <div class="tile tile-youtube"><div class="mark"><div class="play"></div><div class="word">YouTube</div></div></div>
+      <div class="tile tile-apps mat">
+        <div class="grid3"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="label">All apps</div>
+      </div>
+    </div>
+    <div class="under">
+      <div class="chip mat chip-vpn"><span class="dot"></span><span>VPN off</span></div>
+      <div class="chip mat chip-add">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 4.5v15M4.5 12h15"/></svg>
+        <span>Add app</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

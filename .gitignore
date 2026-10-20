@@ -8,3 +8,6 @@ launcher/local.properties
 # your own TV's dumps (serial, android_id, device names) stay local
 backup/
 .DS_Store
+docs/design/wallpapers/real/
+docs/design/renders/
+.superpowers/

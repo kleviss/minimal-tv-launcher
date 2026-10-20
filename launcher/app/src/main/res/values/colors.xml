@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="bg">#FF000000</color>
+
+    <!-- The light pair: cream frost, umber ink. The dark pair: umber frost, cream ink. Chosen per screen region
+         from themes.json. Shadows are always warm umber. -->
+    <color name="light_ink">#FF33281F</color>
+    <color name="light_tint">#8FFFFAF0</color>
+    <color name="light_tint_focus">#DBFFFAF0</color>
+    <color name="light_edge">#59FFFFFF</color>
+    <color name="light_dot_off">#FF665D56</color>
+    <color name="light_dot_on">#FF23683A</color>
+
+    <color name="dark_ink">#FFF3ECE2</color>
+    <color name="dark_tint">#9E3E312A</color>
+    <color name="dark_tint_focus">#EB7C6B5E</color>
+    <color name="dark_edge">#29FFFFFF</color>
+    <color name="dark_dot_off">#FFB8AEA4</color>
+    <color name="dark_dot_on">#FF6FD58A</color>
+
+    <!-- All apps screen and the inputs popup keep the old black look. -->
     <color name="text">#FFFFFFFF</color>
     <color name="text_dim">#8CFFFFFF</color>
     <color name="tile">#FF1C1C1E</color>

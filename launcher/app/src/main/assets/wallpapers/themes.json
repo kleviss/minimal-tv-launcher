@@ -1,0 +1,86 @@
+[
+ {
+  "file": "01.jpg",
+  "source": "IMG_4105.JPG",
+  "top": "light",
+  "pills": "light",
+  "dock": "light",
+  "luminance": {
+   "top": 0.82,
+   "pills": 0.82,
+   "dock": 0.86
+  }
+ },
+ {
+  "file": "02.jpg",
+  "source": "IMG_4106.JPG",
+  "top": "light",
+  "pills": "light",
+  "dock": "light",
+  "luminance": {
+   "top": 0.76,
+   "pills": 0.78,
+   "dock": 0.77
+  }
+ },
+ {
+  "file": "03.jpg",
+  "source": "IMG_4107.jpg",
+  "top": "light",
+  "pills": "light",
+  "dock": "light",
+  "luminance": {
+   "top": 0.82,
+   "pills": 0.8,
+   "dock": 0.88
+  }
+ },
+ {
+  "file": "04.jpg",
+  "source": "IMG_4108.JPG",
+  "top": "dark",
+  "pills": "dark",
+  "dock": "light",
+  "luminance": {
+   "top": 0.34,
+   "pills": 0.2,
+   "dock": 0.45
+  }
+ },
+ {
+  "file": "05.jpg",
+  "source": "IMG_4109.JPG",
+  "top": "light",
+  "pills": "light",
+  "dock": "light",
+  "luminance": {
+   "top": 0.62,
+   "pills": 0.73,
+   "dock": 0.57
+  }
+ },
+ {
+  "file": "06.jpg",
+  "source": "IMG_4110.JPG",
+  "top": "light",
+  "pills": "light",
+  "dock": "dark",
+  "luminance": {
+   "top": 0.71,
+   "pills": 0.72,
+   "dock": 0.42
+  }
+ },
+ {
+  "file": "07.jpg",
+  "source": "IMG_4111.JPG",
+  "top": "light",
+  "pills": "light",
+  "dock": "light",
+  "luminance": {
+   "top": 0.75,
+   "pills": 0.64,
+   "dock": 0.52
+  }
+ }
+]

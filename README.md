@@ -1,16 +1,18 @@
 # TV Home
 
-A fast, plain home screen for a slow Android TV. Black background, a header with the time, and a dock with the apps you actually use.
+A fast home screen for a slow Android TV that looks like an Apple TV: one of your own photos as the wallpaper, a big clock, frosted iOS 18-style panels, and a dock with the apps you actually use.
 
-![TV Home on a 1080p Android TV: clock and date, Inputs, Wi-Fi and Settings pills, a dock with Netflix, YouTube and All apps, a VPN status chip and an Add app button](docs/home.png)
+![TV Home: a beige photo as wallpaper, a centred clock, three frosted pills top right, a dock with Netflix, YouTube and All apps with the focused app's name above it, a VPN status label and an Add app pill](docs/home.jpg)
 
 *A real screenshot from an Android 11 TV with 1.4 GB of RAM. The Wi-Fi name is replaced with a generic label.*
 
-- **Header:** greeting, clock, date, and three pills: Inputs, Wi-Fi (shows the network name), Settings.
-- **Dock:** Netflix, YouTube, and an All apps tile that opens every other app A to Z. The row scrolls sideways when it gets long.
+- **Wallpaper:** a random photo from `launcher/app/src/main/assets/wallpapers` each time the launcher starts. Drop your own photos in a folder and run `python3 docs/design/prepare_wallpapers.py <folder>`: it makes the 1080p crops, a blurred twin for the frosted panels, and `themes.json`, which says per photo whether each screen region is pale or dark so the text and panels flip between dark-on-light and light-on-dark. Nothing is computed on the TV.
+- **Header:** greeting, clock and date centred near the top; three frosted pills top right: Inputs, Wi-Fi (the network name's first word), Settings.
+- **Dock:** Netflix, YouTube, and an All apps tile that opens every other app A to Z. The focused tile lifts a little with a soft shadow, tvOS style, and its name appears above the row. The row scrolls sideways when it gets long.
 - **Add app:** the pill at the bottom-right of the row opens a picker and pins the app you choose. Hold OK on a tile to remove it. Your choices are saved on the TV.
 - **VPN status:** a chip at the bottom-left of the row shows "VPN off", or "VPN · United States" with a green dot while a VPN is on. Detecting a VPN is offline. The country comes from one request to a free IP lookup service (api.country.is, then ipwho.is as a fallback), made only while a VPN is up and once per VPN connection, so the service sees the VPN's address and never your real one.
-- **Lean on purpose:** no libraries, no animations beyond a small scale on focus, and no network use at all while the VPN is off.
+- **Rounded corners:** a black mask with 48 px corners over the launcher, so the square panel looks like a rounded display.
+- **Lean on purpose:** no libraries, no live blur (the panels show a pre-blurred copy of the photo), no animations beyond the focus lift, and no network use at all while the VPN is off.
 
 Forked from [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv) (MIT) and inspired by [manojm321/jain-tv-launcher](https://github.com/manojm321/jain-tv-launcher). The launcher code is rewritten; the ADB install, debloat and restore tooling and the TV lists in `examples/` come from upstream.
 

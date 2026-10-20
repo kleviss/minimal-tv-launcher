@@ -9,7 +9,10 @@ import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.graphics.Outline;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -31,6 +34,8 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
+import android.view.ViewTreeObserver;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
@@ -44,12 +49,17 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Home screen: greeting, clock and date, three pills, and a dock with the pinned apps plus All apps.
- * Pinned apps start as the list in config.xml; the Add app pill pins more, and holding OK on a tile removes it.
+ * Home screen: a random wallpaper, greeting, clock and date centred near the top, three frosted pills top right,
+ * and a dock with the pinned apps plus All apps, the focused app's name above the row, VPN status and Add app
+ * below it. Pinned apps start as the list in config.xml; the Add app pill pins more, and holding OK on a tile
+ * removes it. The look follows docs/design/mockups/d-hybrid.html: every piece of chrome belongs to the TOP or
+ * the DOCK region and takes that region's colour pair, light frost + dark ink on a pale photo or the reverse
+ * on a dark one, as sampled at build time into assets/wallpapers/themes.json.
  */
 public class MainActivity extends Activity {
 
     private static final float FOCUS_SCALE = 1.08f;
+    private static final float PILL_FOCUS_SCALE = 1.06f;
     private static final int REQUEST_PICK = 1;
     private static final String PREFS = "dock";
     private static final String KEY_APPS = "apps";
@@ -57,15 +67,34 @@ public class MainActivity extends Activity {
     private static final ViewOutlineProvider ROUNDED = new ViewOutlineProvider() {
         @Override
         public void getOutline(View view, Outline outline) {
-            float radius = 14 * view.getResources().getDisplayMetrics().density;
+            float radius = 9 * view.getResources().getDisplayMetrics().density;
             outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), radius);
         }
     };
 
+    /** One colour pair: what a region's chrome is drawn with. */
+    private static final class Pair {
+        final int ink, tint, tintFocus, edge, dotOff, dotOn;
+
+        Pair(Resources r, boolean dark) {
+            ink = r.getColor(dark ? R.color.dark_ink : R.color.light_ink, null);
+            tint = r.getColor(dark ? R.color.dark_tint : R.color.light_tint, null);
+            tintFocus = r.getColor(dark ? R.color.dark_tint_focus : R.color.light_tint_focus, null);
+            edge = r.getColor(dark ? R.color.dark_edge : R.color.light_edge, null);
+            dotOff = r.getColor(dark ? R.color.dark_dot_off : R.color.light_dot_off, null);
+            dotOn = r.getColor(dark ? R.color.dark_dot_on : R.color.light_dot_on, null);
+        }
+    }
+
     private TextView greeting;
     private TextView network;
     private TextView vpnStatus;
+    private TextView appName;
     private LinearLayout dock;
+    private ImageView wallpaperView;
+    private Bitmap blurred;
+    private Pair top, pills, dockPair;
+    private int screenW, screenH;
     private PopupWindow inputsPopup;
     private AlertDialog removeDialog;
     private boolean networkCallbackRegistered;
@@ -104,17 +133,105 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         density = getResources().getDisplayMetrics().density;
+        screenW = getResources().getDisplayMetrics().widthPixels;
+        screenH = getResources().getDisplayMetrics().heightPixels;
         greeting = findViewById(R.id.greeting);
         network = findViewById(R.id.btnNetwork);
         vpnStatus = findViewById(R.id.vpnStatus);
+        appName = findViewById(R.id.appName);
         dock = findViewById(R.id.dock);
+        wallpaperView = findViewById(R.id.wallpaper);
 
         findViewById(R.id.btnInputs).setOnClickListener(this::showInputs);
         network.setOnClickListener(v -> open(new Intent(Settings.ACTION_WIFI_SETTINGS)));
         findViewById(R.id.btnSettings).setOnClickListener(v -> open(new Intent(Settings.ACTION_SETTINGS)));
         findViewById(R.id.btnAdd).setOnClickListener(v -> startPicker());
 
+        // Until the photo is decoded, everything is drawn with the light pair on black: readable, and only
+        // for a moment. The wallpaper thread then applies the real theme.
+        applyTheme(false, false, false);
         buildDock();
+
+        // The square panel gets rounded corners: pure black outside a 48px-radius rectangle, over everything.
+        FrameLayout root = findViewById(R.id.root);
+        root.addView(new CornerMask(this, 24 * density),
+                new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        new Thread(() -> {
+            final Wallpapers.Loaded loaded = Wallpapers.pickAndLoad(this);
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed() || loaded == null) return;
+                blurred = loaded.blurred;
+                wallpaperView.setImageBitmap(loaded.sharp);
+                applyTheme(loaded.theme.topDark, loaded.theme.pillsDark, loaded.theme.dockDark);
+                buildDock();
+                if (getCurrentFocus() == null) focusFirstTile();
+            });
+        }).start();
+    }
+
+    // ---- look -------------------------------------------------------------------------------------
+
+    /** Colours every piece of chrome from its region's pair and repaints the two scrims. */
+    private void applyTheme(boolean topDark, boolean pillsDark, boolean dockDark) {
+        Resources r = getResources();
+        top = new Pair(r, topDark);
+        pills = new Pair(r, pillsDark);
+        dockPair = new Pair(r, dockDark);
+
+        int ink = top.ink;
+        greeting.setTextColor(ink);
+        ((TextView) findViewById(R.id.clock)).setTextColor(ink);
+        ((TextView) findViewById(R.id.date)).setTextColor(ink);
+
+        for (int id : new int[]{R.id.btnInputs, R.id.btnNetwork, R.id.btnSettings}) {
+            dressPill(findViewById(id), pills);
+        }
+        dressPill(findViewById(R.id.btnAdd), dockPair);
+        appName.setTextColor(dockPair.ink);
+        vpnStatus.setTextColor(dockPair.ink);
+        drawVpn(vpnHandle != 0);
+
+        // Scrims: a radial lift behind the clock block, a linear lift under the dock, each in its region's tint.
+        int topTint = top.tint & 0x00FFFFFF;
+        GradientDrawable radial = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{0x57000000 | topTint, 0x00000000 | topTint});
+        radial.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+        radial.setGradientCenter(0.5f, 0.36f);
+        radial.setGradientRadius(screenW * 0.42f);
+        findViewById(R.id.scrimTop).setBackground(radial);
+
+        // The lift under the dock eases in over its top 55% so it never shows as a fold, and sits a little
+        // stronger on a dark pair, whose light ink needs it.
+        findViewById(R.id.scrimDock).setBackground(
+                new LiftDrawable(dockPair.tint, dockDark ? 0x5C : 0x30, 0.65f));
+    }
+
+    /** Frost under a pill, its ink, and its focus state (fills brighter, scales a touch, one soft shadow). */
+    private void dressPill(TextView pill, Pair pair) {
+        FrostDrawable frost = new FrostDrawable(blurred, screenW, screenH, 14 * density, pair.tint, pair.edge, density);
+        pill.setBackground(frost);
+        pill.setTextColor(pair.ink);
+        pill.setCompoundDrawableTintList(ColorStateList.valueOf(pair.ink));
+        pill.setOutlineProvider(null);
+        trackPosition(pill, frost);
+        pill.setOnFocusChangeListener((v, focused) -> {
+            frost.setFill(focused ? pair.tintFocus : pair.tint);
+            v.animate().scaleX(focused ? PILL_FOCUS_SCALE : 1f).scaleY(focused ? PILL_FOCUS_SCALE : 1f)
+                    .translationZ(focused ? 14 * density : 0f).setDuration(120).start();
+        });
+        if (pill.isFocused()) frost.setFill(pair.tintFocus);
+    }
+
+    /** Keeps a frost drawable pointed at the patch of blurred photo under its view. */
+    private void trackPosition(View view, FrostDrawable frost) {
+        ViewTreeObserver.OnPreDrawListener listener = () -> {
+            int[] xy = new int[2];
+            view.getLocationOnScreen(xy);
+            frost.setScreenOffset(xy[0], xy[1]);
+            return true;
+        };
+        view.getViewTreeObserver().addOnPreDrawListener(listener);
     }
 
     @Override
@@ -188,10 +305,13 @@ public class MainActivity extends Activity {
         }
         View all = newTile();
         showPlain(all, getDrawable(R.drawable.ic_apps), getString(R.string.all_apps));
+        all.setTag(R.id.label, getString(R.string.all_apps));
         all.setOnClickListener(v -> startActivity(new Intent(this, AllAppsActivity.class)));
         dock.addView(all);
         // The window picks this tile when it first takes focus, so the first dock app is selected on start.
         dock.getChildAt(0).setFocusedByDefault(true);
+        View focused = getCurrentFocus();
+        appName.setText(focused != null && focused.getParent() == dock ? String.valueOf(focused.getTag(R.id.label)) : "");
     }
 
     private void addApp(PackageManager pm, String pkg) {
@@ -205,9 +325,16 @@ public class MainActivity extends Activity {
         }
         String label = String.valueOf(info.loadLabel(pm));
         View tile = newTile();
+        tile.setTag(R.id.label, label);
         Drawable banner = info.loadBanner(pm);
         if (banner != null) {
-            ((ImageView) tile.findViewById(R.id.image)).setImageDrawable(banner);
+            ImageView image = tile.findViewById(R.id.image);
+            image.setImageDrawable(banner);
+            // The hairline keeps a white banner visible on a pale photo (the mockup's inset 1px at 8%).
+            GradientDrawable hair = new GradientDrawable();
+            hair.setCornerRadius(9 * density);
+            hair.setStroke(Math.max(1, (int) density), 0x14221C17);
+            tile.setForeground(hair);
         } else {
             showPlain(tile, info.loadIcon(pm), label);
         }
@@ -279,24 +406,35 @@ public class MainActivity extends Activity {
         ImageView image = tile.findViewById(R.id.image);
         image.setOutlineProvider(ROUNDED);
         image.setClipToOutline(true);
-        // Plain scale on focus: cheap on a slow TV, and the white ring comes from the focused drawable state.
-        tile.setOnFocusChangeListener((v, focused) -> v.animate()
-                .scaleX(focused ? FOCUS_SCALE : 1f)
-                .scaleY(focused ? FOCUS_SCALE : 1f)
-                .setDuration(120)
-                .start());
+        // tvOS lift: the focused tile grows a little and gets one soft shadow, and its name appears above the row.
+        tile.setOutlineProvider(ROUNDED);
+        tile.setOnFocusChangeListener((v, focused) -> {
+            v.animate()
+                    .scaleX(focused ? FOCUS_SCALE : 1f)
+                    .scaleY(focused ? FOCUS_SCALE : 1f)
+                    .translationZ(focused ? 18 * density : 0f)
+                    .setDuration(140)
+                    .start();
+            if (focused) appName.setText(String.valueOf(v.getTag(R.id.label)));
+            else if (appName.getText().toString().equals(String.valueOf(v.getTag(R.id.label)))) appName.setText("");
+        });
         return tile;
     }
 
-    /** Dark tile with a centred icon and a name underneath, for apps that have no banner. */
+    /** Frosted tile with a centred icon and a name underneath, for All apps and apps that have no banner. */
     private void showPlain(View tile, Drawable icon, String label) {
         ImageView image = tile.findViewById(R.id.image);
-        image.setBackgroundResource(R.drawable.tile_bg);
+        int tint = (dockPair.tint & 0x00FFFFFF) | 0xA3000000;   // a touch more opaque than a pill
+        FrostDrawable frost = new FrostDrawable(blurred, screenW, screenH, 9 * density, tint, dockPair.edge, density);
+        image.setBackground(frost);
+        trackPosition(image, frost);
         image.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        image.setPadding(dp(40), dp(20), dp(40), dp(44));
+        image.setPadding(dp(70), dp(18), dp(70), dp(40));
         image.setImageDrawable(icon);
+        image.setImageTintList(ColorStateList.valueOf(dockPair.ink));
         TextView text = tile.findViewById(R.id.label);
         text.setText(label);
+        text.setTextColor(dockPair.ink);
         text.setVisibility(View.VISIBLE);
     }
 
@@ -334,7 +472,10 @@ public class MainActivity extends Activity {
         } catch (RuntimeException ignored) {
             // Show whatever was found so far.
         }
-        network.setText(ethernet ? getString(R.string.ethernet) : wifi ? wifiName() : getString(R.string.offline));
+        String label = ethernet ? getString(R.string.ethernet) : wifi ? wifiName() : getString(R.string.offline);
+        // Long network names ("Home FRITZ!Box 7590") would be cut off: keep the first word.
+        if (label.length() > 14 && label.contains(" ")) label = label.substring(0, label.indexOf(' '));
+        network.setText(label);
         showVpn(vpn);
     }
 
@@ -394,8 +535,9 @@ public class MainActivity extends Activity {
         else if (vpnCountry != null) text = getString(R.string.vpn_country, vpnCountry);
         else text = getString(vpnLookingUp ? R.string.vpn_checking : R.string.vpn_on);
         vpnStatus.setText(text);
-        vpnStatus.setTextColor(on ? 0xFFFFFFFF : 0x8CFFFFFF);
-        vpnStatus.setCompoundDrawableTintList(ColorStateList.valueOf(on ? 0xFF4ADE80 : 0x59FFFFFF));
+        if (dockPair == null) return;
+        vpnStatus.setTextColor(dockPair.ink);
+        vpnStatus.setCompoundDrawableTintList(ColorStateList.valueOf(on ? dockPair.dotOn : dockPair.dotOff));
     }
 
     private void open(Intent intent) {
