@@ -5,10 +5,10 @@
     android:paddingStart="16dp"
     android:paddingEnd="16dp"
     android:gravity="center_vertical"
-    android:background="@drawable/row_bg"
+    android:background="@null"
     android:singleLine="true"
     android:ellipsize="end"
-    android:textColor="@color/text"
+    
     android:textSize="15sp"
     android:fontFamily="sans-serif-medium"
     android:focusable="true"

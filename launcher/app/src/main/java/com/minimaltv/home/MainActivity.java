@@ -403,6 +403,15 @@ public class MainActivity extends Activity {
 
     private View newTile() {
         View tile = getLayoutInflater().inflate(R.layout.tile, dock, false);
+        int count = pinned().size() + 1;   // plus All apps
+        if (count > 3) {
+            float scale = Math.max(0.72f, 3f / count);
+            ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) tile.getLayoutParams();
+            lp.width = Math.round(lp.width * scale);
+            lp.height = Math.round(lp.height * scale);
+            lp.setMarginEnd(Math.round(lp.getMarginEnd() * scale));
+            tile.setLayoutParams(lp);
+        }
         ImageView image = tile.findViewById(R.id.image);
         image.setOutlineProvider(ROUNDED);
         image.setClipToOutline(true);
@@ -429,7 +438,10 @@ public class MainActivity extends Activity {
         image.setBackground(frost);
         trackPosition(image, frost);
         image.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        image.setPadding(dp(70), dp(18), dp(70), dp(40));
+        // Padding in proportion to the tile, so the glyph stays the same relative size when tiles shrink.
+        ViewGroup.LayoutParams tl = tile.getLayoutParams();
+        float k = tl.width / (192f * density);
+        image.setPadding(Math.round(dp(70) * k), Math.round(dp(18) * k), Math.round(dp(70) * k), Math.round(dp(40) * k));
         image.setImageDrawable(icon);
         image.setImageTintList(ColorStateList.valueOf(dockPair.ink));
         TextView text = tile.findViewById(R.id.label);
@@ -567,8 +579,11 @@ public class MainActivity extends Activity {
 
         LinearLayout rows = new LinearLayout(this);
         rows.setOrientation(LinearLayout.VERTICAL);
-        rows.setBackgroundResource(R.drawable.popup_bg);
-        rows.setPadding(dp(8), dp(8), dp(8), dp(8));
+        FrostDrawable panel = new FrostDrawable(blurred, screenW, screenH, 14 * density, pills.tint, pills.edge, density);
+        rows.setBackground(panel);
+        trackPosition(rows, panel);
+        rows.setPadding(dp(6), dp(6), dp(6), dp(6));
+        rows.setElevation(12 * density);
         PopupWindow popup = new PopupWindow(rows, dp(220), ViewGroup.LayoutParams.WRAP_CONTENT, true);
         popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));   // needed for Back to dismiss
         popup.setOutsideTouchable(true);
@@ -578,6 +593,11 @@ public class MainActivity extends Activity {
             String label = String.valueOf(info.loadLabel(this));
             boolean hdmi = info.getType() == TvInputInfo.TYPE_HDMI;
             row.setText(hdmi && !label.toUpperCase(Locale.ROOT).contains("HDMI") ? "HDMI " + label : label);
+            row.setTextColor(pills.ink);
+            GradientDrawable focusFill = new GradientDrawable();
+            focusFill.setCornerRadius(10 * density);
+            focusFill.setColor(pills.tintFocus);
+            row.setOnFocusChangeListener((v, focused) -> v.setBackground(focused ? focusFill : null));
             String id = info.getId();
             row.setOnClickListener(v -> {
                 popup.dismiss();
