@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One dock tile, 16:9. The app's banner, or (All apps and apps without a banner) a frosted tile with an icon
+<!-- One dock tile, 16:9 (150x84dp, five fit between the gutters). The app's banner, or (All apps and apps without a banner) a frosted tile with an icon
      and a name. Focus = scale up a little plus a soft shadow, set in code; no ring. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="192dp"
-    android:layout_height="108dp"
-    android:layout_marginEnd="20dp"
+    android:layout_width="150dp"
+    android:layout_height="84dp"
+    android:layout_marginEnd="16dp"
     android:clipChildren="false"
     android:focusable="true"
     android:clickable="true">
@@ -21,11 +21,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:paddingBottom="16dp"
+        android:paddingBottom="12dp"
         android:gravity="center"
         android:singleLine="true"
         android:ellipsize="end"
-        android:textSize="15sp"
+        android:textSize="13sp"
         android:fontFamily="sans-serif-medium"
         android:visibility="gone" />
 </FrameLayout>

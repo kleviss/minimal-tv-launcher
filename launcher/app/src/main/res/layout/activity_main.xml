@@ -100,12 +100,16 @@
             android:fontFamily="sans-serif" />
     </LinearLayout>
 
-    <!-- Bottom: the focused app's name, the row of tiles, then VPN status left and Add app right. -->
+    <!-- Bottom: the focused app's name, the shelf of tiles, then VPN status left and Add app right. The block
+         keeps the pills' 36dp gutters whatever is pinned: tiles stay full size, the shelf is centred while it
+         fits and scrolls inside the gutters once it does not (the focused tile is kept in the middle). -->
     <LinearLayout
         android:id="@+id/dockBlock"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center_horizontal"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="36dp"
+        android:layout_marginEnd="36dp"
         android:layout_marginBottom="36dp"
         android:orientation="vertical"
         android:clipChildren="false"
@@ -116,27 +120,36 @@
             android:layout_width="wrap_content"
             android:layout_height="36dp"
             android:layout_marginStart="-1dp"
-            android:layout_marginBottom="10dp"
+            android:layout_marginBottom="14dp"
             android:gravity="center_vertical"
             android:singleLine="true"
             android:textSize="32sp"
             android:fontFamily="sans-serif-light"
             android:letterSpacing="-0.01" />
 
-        <!-- Scrolls sideways once more apps are pinned than fit. Tiles are 192x108dp with 20dp gaps. -->
+        <!-- Scrolls sideways once more apps are pinned than fit. Tiles are 150x84dp with 16dp gaps; the
+             8dp padding is room for the focused tile's lift. -->
         <HorizontalScrollView
             android:id="@+id/dockScroll"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginStart="-8dp"
+            android:layout_marginEnd="-8dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:fillViewport="true"
             android:scrollbars="none"
             android:overScrollMode="never"
             android:clipChildren="false"
             android:clipToPadding="false">
 
+            <!-- fillViewport makes the row at least as wide as the view, so gravity centres a short row;
+                 a long row is its own width and scrolls. -->
             <LinearLayout
                 android:id="@+id/dock"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
                 android:orientation="horizontal"
                 android:clipChildren="false"
                 android:clipToPadding="false" />

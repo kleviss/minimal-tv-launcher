@@ -36,6 +36,7 @@ import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
@@ -90,6 +91,7 @@ public class MainActivity extends Activity {
     private TextView network;
     private TextView vpnStatus;
     private TextView appName;
+    private HorizontalScrollView dockScroll;
     private LinearLayout dock;
     private ImageView wallpaperView;
     private Bitmap blurred;
@@ -102,10 +104,14 @@ public class MainActivity extends Activity {
     private float density;
 
     // VPN state: the network handle of the current VPN (0 when none) and the country found for it.
+    // A VPN app that switches server keeps the same tunnel, so the country is also checked again when the
+    // home screen comes back and every RECHECK_MS while the VPN stays up.
+    private static final long VPN_RECHECK_MS = 5 * 60_000;
     private long vpnHandle;
     private String vpnCountry;
     private boolean vpnLookingUp;
     private long vpnLastLookup;
+    private boolean vpnRecheck;
 
     /** The clock and date are TextClocks that tick on their own; this refreshes what they do not cover. */
     private final BroadcastReceiver minuteTick = new BroadcastReceiver() {
@@ -139,6 +145,7 @@ public class MainActivity extends Activity {
         network = findViewById(R.id.btnNetwork);
         vpnStatus = findViewById(R.id.vpnStatus);
         appName = findViewById(R.id.appName);
+        dockScroll = findViewById(R.id.dockScroll);
         dock = findViewById(R.id.dock);
         wallpaperView = findViewById(R.id.wallpaper);
 
@@ -245,6 +252,7 @@ public class MainActivity extends Activity {
         } catch (RuntimeException e) {
             // The header still refreshes on resume and every minute.
         }
+        vpnRecheck = true;
         refresh();
     }
 
@@ -307,6 +315,8 @@ public class MainActivity extends Activity {
         showPlain(all, getDrawable(R.drawable.ic_apps), getString(R.string.all_apps));
         all.setTag(R.id.label, getString(R.string.all_apps));
         all.setOnClickListener(v -> startActivity(new Intent(this, AllAppsActivity.class)));
+        // No gap after the last tile, so a row that fits sits exactly centred.
+        ((ViewGroup.MarginLayoutParams) all.getLayoutParams()).setMarginEnd(0);
         dock.addView(all);
         // The window picks this tile when it first takes focus, so the first dock app is selected on start.
         dock.getChildAt(0).setFocusedByDefault(true);
@@ -403,15 +413,6 @@ public class MainActivity extends Activity {
 
     private View newTile() {
         View tile = getLayoutInflater().inflate(R.layout.tile, dock, false);
-        int count = pinned().size() + 1;   // plus All apps
-        if (count > 3) {
-            float scale = Math.max(0.72f, 3f / count);
-            ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) tile.getLayoutParams();
-            lp.width = Math.round(lp.width * scale);
-            lp.height = Math.round(lp.height * scale);
-            lp.setMarginEnd(Math.round(lp.getMarginEnd() * scale));
-            tile.setLayoutParams(lp);
-        }
         ImageView image = tile.findViewById(R.id.image);
         image.setOutlineProvider(ROUNDED);
         image.setClipToOutline(true);
@@ -424,10 +425,27 @@ public class MainActivity extends Activity {
                     .translationZ(focused ? 18 * density : 0f)
                     .setDuration(140)
                     .start();
-            if (focused) appName.setText(String.valueOf(v.getTag(R.id.label)));
-            else if (appName.getText().toString().equals(String.valueOf(v.getTag(R.id.label)))) appName.setText("");
+            if (focused) {
+                appName.setText(String.valueOf(v.getTag(R.id.label)));
+                centreInShelf(v);
+            } else if (appName.getText().toString().equals(String.valueOf(v.getTag(R.id.label)))) {
+                appName.setText("");
+            }
         });
         return tile;
+    }
+
+    /**
+     * A shelf longer than the screen scrolls so the focused tile sits in the middle, with its neighbours
+     * showing either side. Posted so it runs after the scroll view's own "just make it visible" scroll.
+     */
+    private void centreInShelf(View tile) {
+        dockScroll.post(() -> {
+            int viewport = dockScroll.getWidth() - dockScroll.getPaddingLeft() - dockScroll.getPaddingRight();
+            int wanted = tile.getLeft() + tile.getWidth() / 2 - viewport / 2;
+            int max = Math.max(0, dock.getWidth() - viewport);
+            dockScroll.smoothScrollTo(Math.max(0, Math.min(max, wanted)), 0);
+        });
     }
 
     /** Frosted tile with a centred icon and a name underneath, for All apps and apps that have no banner. */
@@ -438,10 +456,7 @@ public class MainActivity extends Activity {
         image.setBackground(frost);
         trackPosition(image, frost);
         image.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        // Padding in proportion to the tile, so the glyph stays the same relative size when tiles shrink.
-        ViewGroup.LayoutParams tl = tile.getLayoutParams();
-        float k = tl.width / (192f * density);
-        image.setPadding(Math.round(dp(70) * k), Math.round(dp(18) * k), Math.round(dp(70) * k), Math.round(dp(40) * k));
+        image.setPadding(dp(55), dp(14), dp(55), dp(31));
         image.setImageDrawable(icon);
         image.setImageTintList(ColorStateList.valueOf(dockPair.ink));
         TextView text = tile.findViewById(R.id.label);
@@ -523,8 +538,13 @@ public class MainActivity extends Activity {
             vpnHandle = handle;
             vpnCountry = null;
         }
-        // One lookup per VPN connection, and a retry at most once a minute if no service answered.
-        if (vpnCountry == null && (newConnection || (!vpnLookingUp && now - vpnLastLookup > 60_000))) {
+        // A lookup per VPN connection, a retry at most once a minute if no service answered, and a check
+        // again on coming back to the home screen (at most every 15 s) or after VPN_RECHECK_MS.
+        long age = now - vpnLastLookup;
+        boolean retry = vpnCountry == null && age > 60_000;
+        boolean recheck = (vpnRecheck && age > 15_000) || age > VPN_RECHECK_MS;
+        if (newConnection || (!vpnLookingUp && (retry || recheck))) {
+            vpnRecheck = false;
             lookUpVpnCountry(handle, now);
         }
         drawVpn(true);
@@ -536,7 +556,7 @@ public class MainActivity extends Activity {
         VpnCountry.lookup(country -> runOnUiThread(() -> {
             if (handle != vpnHandle) return;   // the VPN changed while we were asking
             vpnLookingUp = false;
-            vpnCountry = country;
+            if (country != null || vpnCountry == null) vpnCountry = country;   // keep the last answer on a miss
             drawVpn(true);
         }));
     }
